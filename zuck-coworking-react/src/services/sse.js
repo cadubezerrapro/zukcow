@@ -29,7 +29,7 @@ class SSEService {
 
     startPolling(spaceId) {
         this.reconnectAttempts = 0;
-        eventBus.emit('sse:connected');
+        this._pollConnected = false;
 
         const poll = async () => {
             try {
@@ -37,6 +37,9 @@ class SSEService {
                 const response = await fetch(`${SSE_URL}?space_id=${spaceId}&user_id=${userId}`, {
                     headers: { 'X-User-Id': userId }
                 });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
                 const data = await response.json();
 
                 if (data.type === 'positions') {
@@ -46,10 +49,19 @@ class SSEService {
                     });
                 }
 
+                // Emit connected on every successful poll
+                if (!this._pollConnected) {
+                    this._pollConnected = true;
+                    eventBus.emit('sse:connected');
+                }
                 this.reconnectAttempts = 0;
             } catch (e) {
                 console.warn('Poll error:', e);
                 this.reconnectAttempts++;
+                if (this._pollConnected) {
+                    this._pollConnected = false;
+                    eventBus.emit('sse:disconnected');
+                }
                 if (this.reconnectAttempts >= this.maxReconnectAttempts) {
                     eventBus.emit('sse:max_retries');
                     this.disconnect();
@@ -58,9 +70,9 @@ class SSEService {
             }
         };
 
-        // Poll every 300ms for smooth multiplayer
+        // Poll every 500ms for smooth multiplayer (300ms was too aggressive for serverless)
         poll();
-        this.pollInterval = setInterval(poll, 300);
+        this.pollInterval = setInterval(poll, 500);
     }
 
     startSSE(spaceId) {
