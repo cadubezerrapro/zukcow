@@ -60,13 +60,18 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                     </span>
                 )}
 
-                {/* Mic indicator badge */}
+            </div>
+
+            {/* Name + Mic row */}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 5,
+                maxWidth: 120,
+            }}>
                 <div style={{
-                    position: 'absolute',
-                    bottom: 0,
-                    right: 0,
-                    width: 28,
-                    height: 28,
+                    width: 20,
+                    height: 20,
                     borderRadius: '50%',
                     background: micEnabled
                         ? 'linear-gradient(135deg, #22c55e, #16a34a)'
@@ -74,29 +79,24 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '3px solid #0f172a',
-                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
+                    flexShrink: 0,
                 }}>
                     {micEnabled
-                        ? <Mic size={12} color="#fff" />
-                        : <MicOff size={12} color="#fff" />
+                        ? <Mic size={10} color="#fff" />
+                        : <MicOff size={10} color="#fff" />
                     }
                 </div>
+                <span style={{
+                    color: '#e2e8f0',
+                    fontSize: 13,
+                    fontWeight: 600,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                }}>
+                    {isLocal ? 'Voce' : name}
+                </span>
             </div>
-
-            {/* Name */}
-            <span style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
-                maxWidth: 110,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-                textAlign: 'center',
-            }}>
-                {isLocal ? 'Voce' : name}
-            </span>
         </div>
     );
 }
