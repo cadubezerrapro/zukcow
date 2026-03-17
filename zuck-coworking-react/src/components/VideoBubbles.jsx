@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Mic, MicOff } from 'lucide-react';
 
 function useSpeaking(stream) {
     const [isSpeaking, setIsSpeaking] = useState(false);
@@ -107,41 +106,19 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
 
             </div>
 
-            {/* Name + Mic row */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
+            {/* Name */}
+            <span style={{
+                color: '#e2e8f0',
+                fontSize: 13,
+                fontWeight: 600,
                 maxWidth: 120,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
             }}>
-                <div style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    background: micEnabled
-                        ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                        : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                }}>
-                    {micEnabled
-                        ? <Mic size={10} color="#fff" />
-                        : <MicOff size={10} color="#fff" />
-                    }
-                </div>
-                <span style={{
-                    color: '#e2e8f0',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                }}>
-                    {isLocal ? 'Voce' : name}
-                </span>
-            </div>
+                {isLocal ? 'Voce' : name}
+            </span>
         </div>
     );
 }
