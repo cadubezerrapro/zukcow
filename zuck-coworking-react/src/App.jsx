@@ -54,6 +54,19 @@ export default function App() {
     const [selectedFurniture, setSelectedFurniture] = useState(null);
     const [isMovingFurniture, setIsMovingFurniture] = useState(false);
 
+    // Helper: add a track to all existing peer connections
+    const addTrackToPeers = useCallback((track, stream) => {
+        Object.values(peersRef.current).forEach(pc => {
+            const senders = pc.getSenders();
+            const existingSender = senders.find(s => s.track?.kind === track.kind);
+            if (existingSender) {
+                existingSender.replaceTrack(track);
+            } else {
+                pc.addTrack(track, stream);
+            }
+        });
+    }, []);
+
     const toggleMic = useCallback(async () => {
         if (micEnabled) {
             // Disable mic
@@ -67,13 +80,18 @@ export default function App() {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: camEnabled });
                     localStreamRef.current = stream;
                     if (localVideoRef.current) localVideoRef.current.srcObject = stream;
+                    // Add all tracks to existing peers
+                    stream.getTracks().forEach(t => addTrackToPeers(t, stream));
                 } else {
                     const audioTracks = localStreamRef.current.getAudioTracks();
                     if (audioTracks.length > 0) {
                         audioTracks.forEach(t => t.enabled = true);
                     } else {
                         const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                        audioStream.getAudioTracks().forEach(t => localStreamRef.current.addTrack(t));
+                        audioStream.getAudioTracks().forEach(t => {
+                            localStreamRef.current.addTrack(t);
+                            addTrackToPeers(t, localStreamRef.current);
+                        });
                     }
                 }
                 setMicEnabled(true);
@@ -81,7 +99,7 @@ export default function App() {
                 console.error('Mic access denied:', err);
             }
         }
-    }, [micEnabled, camEnabled]);
+    }, [micEnabled, camEnabled, addTrackToPeers]);
 
     const toggleCam = useCallback(async () => {
         if (camEnabled) {
@@ -99,9 +117,14 @@ export default function App() {
                     const stream = await navigator.mediaDevices.getUserMedia({ audio: micEnabled, video: true });
                     localStreamRef.current = stream;
                     if (micEnabled) setMicEnabled(true);
+                    // Add all tracks to existing peers
+                    stream.getTracks().forEach(t => addTrackToPeers(t, stream));
                 } else {
                     const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
-                    videoStream.getVideoTracks().forEach(t => localStreamRef.current.addTrack(t));
+                    videoStream.getVideoTracks().forEach(t => {
+                        localStreamRef.current.addTrack(t);
+                        addTrackToPeers(t, localStreamRef.current);
+                    });
                 }
                 if (localVideoRef.current) localVideoRef.current.srcObject = localStreamRef.current;
                 setCamEnabled(true);
@@ -109,7 +132,7 @@ export default function App() {
                 console.error('Camera access denied:', err);
             }
         }
-    }, [camEnabled, micEnabled]);
+    }, [camEnabled, micEnabled, addTrackToPeers]);
 
     // Cleanup media on unmount
     useEffect(() => {
@@ -309,6 +332,17 @@ export default function App() {
             }
         };
 
+        // Renegotiate when tracks are added/removed after initial connection
+        pc.onnegotiationneeded = async () => {
+            try {
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+                sendSignal(peerId, 'offer', pc.localDescription).catch(() => {});
+            } catch (e) {
+                console.warn('Renegotiation failed:', e);
+            }
+        };
+
         peersRef.current[peerId] = pc;
 
         // Create offer
@@ -344,6 +378,17 @@ export default function App() {
                 pc.onconnectionstatechange = () => {
                     if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
                         disconnectPeer(fromPeerId);
+                    }
+                };
+
+                // Renegotiate when tracks change
+                pc.onnegotiationneeded = async () => {
+                    try {
+                        const offer = await pc.createOffer();
+                        await pc.setLocalDescription(offer);
+                        sendSignal(fromPeerId, 'offer', pc.localDescription).catch(() => {});
+                    } catch (e) {
+                        console.warn('Renegotiation failed:', e);
                     }
                 };
 
