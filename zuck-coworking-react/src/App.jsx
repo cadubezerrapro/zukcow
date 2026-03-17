@@ -6,7 +6,6 @@ import { joinSpace, leaveSpace, updatePosition, heartbeat, setDisplayName, sendS
 import HUD from './components/HUD';
 import UserList from './components/UserList';
 import WelcomeModal from './components/WelcomeModal';
-import VideoOverlay from './components/VideoOverlay';
 import VideoBubbles from './components/VideoBubbles';
 import FurnitureEditor from './components/FurnitureEditor';
 
@@ -554,12 +553,6 @@ export default function App() {
                 cameraInfo={cameraInfo}
                 currentRoom={currentRoom}
                 displayName={displayName}
-            />
-
-            <VideoOverlay
-                camEnabled={camEnabled}
-                localVideoRef={localVideoRef}
-                localStream={localStreamRef.current}
             />
 
             <FurnitureEditor

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Mic, MicOff, VideoOff } from 'lucide-react';
+import { Mic, MicOff } from 'lucide-react';
 
 function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
     const videoRef = useRef(null);
@@ -15,25 +15,25 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 4,
-            minWidth: 72,
+            gap: 6,
+            minWidth: 120,
         }}>
             {/* Video / Avatar circle */}
             <div style={{
-                width: 72,
-                height: 72,
+                width: 120,
+                height: 120,
                 borderRadius: '50%',
                 overflow: 'hidden',
                 background: hasVideo ? '#000' : 'linear-gradient(135deg, #334155, #1e293b)',
-                border: `3px solid ${micEnabled ? '#22c55e' : '#475569'}`,
+                border: `4px solid ${micEnabled ? '#22c55e' : '#475569'}`,
                 boxShadow: micEnabled
-                    ? '0 0 12px rgba(34,197,94,0.3), 0 4px 12px rgba(0,0,0,0.4)'
-                    : '0 4px 12px rgba(0,0,0,0.4)',
+                    ? '0 0 16px rgba(34,197,94,0.4), 0 6px 20px rgba(0,0,0,0.5)'
+                    : '0 6px 20px rgba(0,0,0,0.5)',
                 position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'border-color 0.2s ease',
+                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
             }}>
                 {hasVideo && stream ? (
                     <video
@@ -50,7 +50,7 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                     />
                 ) : (
                     <span style={{
-                        fontSize: 28,
+                        fontSize: 40,
                         fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
@@ -63,10 +63,10 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                 {/* Mic indicator badge */}
                 <div style={{
                     position: 'absolute',
-                    bottom: -2,
-                    right: -2,
-                    width: 22,
-                    height: 22,
+                    bottom: 0,
+                    right: 0,
+                    width: 28,
+                    height: 28,
                     borderRadius: '50%',
                     background: micEnabled
                         ? 'linear-gradient(135deg, #22c55e, #16a34a)'
@@ -74,41 +74,22 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #0f172a',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                    border: '3px solid #0f172a',
+                    boxShadow: '0 2px 6px rgba(0,0,0,0.4)',
                 }}>
                     {micEnabled
-                        ? <Mic size={10} color="#fff" />
-                        : <MicOff size={10} color="#fff" />
+                        ? <Mic size={12} color="#fff" />
+                        : <MicOff size={12} color="#fff" />
                     }
                 </div>
-
-                {/* No video badge */}
-                {!hasVideo && (
-                    <div style={{
-                        position: 'absolute',
-                        top: -2,
-                        right: -2,
-                        width: 20,
-                        height: 20,
-                        borderRadius: '50%',
-                        background: '#475569',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        border: '2px solid #0f172a',
-                    }}>
-                        <VideoOff size={9} color="#94a3b8" />
-                    </div>
-                )}
             </div>
 
             {/* Name */}
             <span style={{
                 color: '#e2e8f0',
-                fontSize: 11,
+                fontSize: 13,
                 fontWeight: 600,
-                maxWidth: 80,
+                maxWidth: 110,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
@@ -158,14 +139,14 @@ export default function VideoBubbles({
             <div style={{
                 display: 'flex',
                 alignItems: 'flex-start',
-                gap: 16,
-                background: 'rgba(15, 23, 42, 0.9)',
-                backdropFilter: 'blur(16px)',
-                WebkitBackdropFilter: 'blur(16px)',
-                borderRadius: 16,
-                padding: '14px 22px 10px',
+                gap: 20,
+                background: 'rgba(15, 23, 42, 0.92)',
+                backdropFilter: 'blur(20px)',
+                WebkitBackdropFilter: 'blur(20px)',
+                borderRadius: 20,
+                padding: '18px 28px 14px',
                 border: '1px solid rgba(71, 85, 105, 0.5)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
+                boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}>
                 {/* Local user tile - always show when media is active */}
                 {hasLocalMedia && (
