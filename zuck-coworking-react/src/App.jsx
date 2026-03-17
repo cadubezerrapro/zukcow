@@ -459,10 +459,12 @@ export default function App() {
     }, [currentRoom, onlineUsers, connectToPeer, disconnectPeer]);
 
     // Screen share
+    const [screenStream, setScreenStream] = useState(null);
     const startScreenShare = useCallback(async () => {
         try {
-            const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-            const screenTrack = screenStream.getVideoTracks()[0];
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const screenTrack = stream.getVideoTracks()[0];
+            setScreenStream(stream);
 
             // Replace video track in all peer connections
             Object.values(peersRef.current).forEach(pc => {
@@ -474,6 +476,7 @@ export default function App() {
 
             screenTrack.onended = () => {
                 // Restore camera track when screen share ends
+                setScreenStream(null);
                 const camTrack = localStreamRef.current?.getVideoTracks()[0];
                 if (camTrack) {
                     Object.values(peersRef.current).forEach(pc => {
@@ -553,6 +556,7 @@ export default function App() {
                 cameraInfo={cameraInfo}
                 currentRoom={currentRoom}
                 displayName={displayName}
+                screenStream={screenStream}
             />
 
             <FurnitureEditor

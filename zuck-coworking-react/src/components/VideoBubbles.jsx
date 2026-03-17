@@ -14,7 +14,6 @@ function useSpeaking(stream) {
         const setup = async () => {
             try {
                 ctx = new (window.AudioContext || window.webkitAudioContext)();
-                // Chrome suspends AudioContext until user interaction
                 if (ctx.state === 'suspended') await ctx.resume();
 
                 source = ctx.createMediaStreamSource(stream);
@@ -32,7 +31,6 @@ function useSpeaking(stream) {
                     if (ts - lastUpdate < 80) return;
                     lastUpdate = ts;
 
-                    // Use time domain data (amplitude) — more reliable than frequency
                     analyser.getByteTimeDomainData(data);
                     let maxDeviation = 0;
                     for (let i = 0; i < data.length; i++) {
@@ -60,7 +58,7 @@ function useSpeaking(stream) {
     return isSpeaking;
 }
 
-function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
+function VideoTile({ stream, name, isLocal, hasVideo }) {
     const videoRef = useRef(null);
     const isSpeaking = useSpeaking(stream);
 
@@ -70,26 +68,29 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
         }
     }, [stream]);
 
+    // Dynamic sizing: small circle for avatar, larger rect for video
+    const size = hasVideo ? { w: 140, h: 105 } : { w: 56, h: 56 };
+    const borderRadius = hasVideo ? 12 : '50%';
+    const fontSize = hasVideo ? 11 : 18;
+
     return (
         <div style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            gap: 6,
-            minWidth: 120,
+            gap: 4,
+            minWidth: size.w,
         }}>
-            {/* Video / Avatar circle */}
             <div style={{
-                width: 120,
-                height: 120,
-                borderRadius: '50%',
+                width: size.w,
+                height: size.h,
+                borderRadius,
                 overflow: 'hidden',
                 background: hasVideo ? '#000' : 'linear-gradient(135deg, #334155, #1e293b)',
-                border: `4px solid ${isSpeaking ? '#22c55e' : '#475569'}`,
+                border: `3px solid ${isSpeaking ? '#22c55e' : '#475569'}`,
                 boxShadow: isSpeaking
-                    ? '0 0 16px rgba(34,197,94,0.4), 0 6px 20px rgba(0,0,0,0.5)'
-                    : '0 6px 20px rgba(0,0,0,0.5)',
-                position: 'relative',
+                    ? '0 0 12px rgba(34,197,94,0.4), 0 4px 12px rgba(0,0,0,0.4)'
+                    : '0 4px 12px rgba(0,0,0,0.4)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -105,12 +106,12 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                             width: '100%',
                             height: '100%',
                             objectFit: 'cover',
-                            transform: 'scaleX(-1)',
+                            transform: isLocal ? 'scaleX(-1)' : 'none',
                         }}
                     />
                 ) : (
                     <span style={{
-                        fontSize: 40,
+                        fontSize,
                         fontWeight: 700,
                         color: '#94a3b8',
                         textTransform: 'uppercase',
@@ -119,21 +120,67 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                         {(name || '?')[0]}
                     </span>
                 )}
-
             </div>
 
-            {/* Name */}
             <span style={{
-                color: '#e2e8f0',
-                fontSize: 13,
-                fontWeight: 600,
-                maxWidth: 120,
+                color: '#cbd5e1',
+                fontSize: 11,
+                fontWeight: 500,
+                maxWidth: size.w + 10,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
                 textAlign: 'center',
             }}>
                 {isLocal ? 'Voce' : name}
+            </span>
+        </div>
+    );
+}
+
+function ScreenTile({ stream }) {
+    const videoRef = useRef(null);
+
+    useEffect(() => {
+        if (videoRef.current && stream) {
+            videoRef.current.srcObject = stream;
+        }
+    }, [stream]);
+
+    return (
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+        }}>
+            <div style={{
+                width: 260,
+                height: 160,
+                borderRadius: 12,
+                overflow: 'hidden',
+                background: '#000',
+                border: '3px solid #3b82f6',
+                boxShadow: '0 0 12px rgba(59,130,246,0.3), 0 4px 12px rgba(0,0,0,0.4)',
+            }}>
+                <video
+                    ref={videoRef}
+                    autoPlay
+                    playsInline
+                    muted
+                    style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                    }}
+                />
+            </div>
+            <span style={{
+                color: '#93c5fd',
+                fontSize: 11,
+                fontWeight: 500,
+            }}>
+                Tela compartilhada
             </span>
         </div>
     );
@@ -146,12 +193,12 @@ export default function VideoBubbles({
     camEnabled,
     micEnabled,
     currentRoom,
-    displayName
+    displayName,
+    screenStream
 }) {
-    // Determine if we have any local media active
     const hasLocalMedia = !!(localStream && (camEnabled || micEnabled));
+    const hasScreen = !!(screenStream && screenStream.getVideoTracks().length > 0);
 
-    // Collect peers in same room (if in a room)
     const myId = String(window.USER_ID || localStorage.getItem('cowork_user_id') || '');
     const roomPeers = currentRoom
         ? Object.entries(onlineUsers).filter(
@@ -159,11 +206,9 @@ export default function VideoBubbles({
         )
         : [];
 
-    // Check if any remote streams exist
     const hasRemoteStreams = Object.keys(remoteStreams).length > 0;
 
-    // Show bar if: mic/cam is active OR there are remote streams OR peers in same room
-    if (!hasLocalMedia && !hasRemoteStreams && roomPeers.length === 0) return null;
+    if (!hasLocalMedia && !hasRemoteStreams && !hasScreen && roomPeers.length === 0) return null;
 
     return (
         <div style={{
@@ -176,23 +221,25 @@ export default function VideoBubbles({
         }}>
             <div style={{
                 display: 'flex',
-                alignItems: 'flex-start',
-                gap: 20,
+                alignItems: 'flex-end',
+                gap: 14,
                 background: 'rgba(15, 23, 42, 0.92)',
                 backdropFilter: 'blur(20px)',
                 WebkitBackdropFilter: 'blur(20px)',
-                borderRadius: 20,
-                padding: '18px 28px 14px',
+                borderRadius: 16,
+                padding: '12px 18px 8px',
                 border: '1px solid rgba(71, 85, 105, 0.5)',
-                boxShadow: '0 10px 40px rgba(0,0,0,0.5), 0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06)',
             }}>
-                {/* Local user tile - always show when media is active */}
+                {/* Screen share tile */}
+                {hasScreen && <ScreenTile stream={screenStream} />}
+
+                {/* Local user tile */}
                 {hasLocalMedia && (
                     <VideoTile
                         stream={localStream}
                         name={displayName || 'Voce'}
                         isLocal={true}
-                        micEnabled={micEnabled}
                         hasVideo={!!(camEnabled && localStream && localStream.getVideoTracks().length > 0)}
                     />
                 )}
@@ -201,20 +248,18 @@ export default function VideoBubbles({
                 {Object.entries(remoteStreams).map(([peerId, stream]) => {
                     const user = onlineUsers[peerId];
                     const hasVideo = stream?.getVideoTracks?.().length > 0;
-
                     return (
                         <VideoTile
                             key={peerId}
                             stream={stream}
                             name={user?.name || `User ${peerId}`}
                             isLocal={false}
-                            micEnabled={!!stream}
                             hasVideo={!!hasVideo}
                         />
                     );
                 })}
 
-                {/* Room peers without streams (show avatar placeholder) */}
+                {/* Room peers without streams */}
                 {roomPeers
                     .filter(([id]) => !remoteStreams[id])
                     .map(([peerId, user]) => (
@@ -223,7 +268,6 @@ export default function VideoBubbles({
                             stream={null}
                             name={user.name || `User ${peerId}`}
                             isLocal={false}
-                            micEnabled={false}
                             hasVideo={false}
                         />
                     ))
