@@ -5,7 +5,7 @@ const redis = new Redis({
     token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const HEARTBEAT_TTL = 60; // seconds before user is considered offline
+const HEARTBEAT_TTL = 30; // seconds before user is considered offline
 const SIGNAL_TTL = 30;
 
 // Simple user ID from query/header (no PHP session — uses a client-generated ID)
@@ -90,14 +90,16 @@ async function handleJoin(res, userId, userName, req) {
         last_heartbeat: Date.now()
     };
 
-    // Check if user already exists (keep position)
+    // Check if user already exists (keep position but always update name from header)
     const existing = await redis.hget(`cowork:space:${spaceId}:users`, userId);
     if (existing) {
-        userData.x = existing.x || 608;
-        userData.y = existing.y || 480;
-        userData.direction = existing.direction || 'down';
-        userData.name = existing.name || userName;
-        userData.avatar_sprite = existing.avatar_sprite || 'default';
+        const ex = typeof existing === 'string' ? JSON.parse(existing) : existing;
+        userData.x = ex.x || 608;
+        userData.y = ex.y || 480;
+        userData.direction = ex.direction || 'down';
+        // Always use the name from the header (most up-to-date)
+        userData.name = userName !== 'Usuario' ? userName : (ex.name || userName);
+        userData.avatar_sprite = ex.avatar_sprite || 'default';
     }
 
     await redis.hset(`cowork:space:${spaceId}:users`, { [userId]: JSON.stringify(userData) });
@@ -309,15 +311,18 @@ async function getOnlineUsers(spaceId) {
     const allUsers = await redis.hgetall(`cowork:space:${spaceId}:users`) || {};
     const now = Date.now();
     const users = {};
+    const staleIds = [];
 
     for (const [uid, raw] of Object.entries(allUsers)) {
         const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
         // Check if heartbeat is still valid
-        if (!user.is_online) continue;
+        if (!user.is_online) {
+            staleIds.push(uid);
+            continue;
+        }
         if (now - user.last_heartbeat > HEARTBEAT_TTL * 1000) {
-            user.is_online = false;
-            await redis.hset(`cowork:space:${spaceId}:users`, { [uid]: JSON.stringify(user) });
+            staleIds.push(uid);
             continue;
         }
 
@@ -331,6 +336,11 @@ async function getOnlineUsers(spaceId) {
             custom_message: user.custom_message || null,
             current_room: user.current_room || null
         };
+    }
+
+    // Clean up stale users from Redis completely
+    if (staleIds.length > 0) {
+        await redis.hdel(`cowork:space:${spaceId}:users`, ...staleIds);
     }
 
     return users;

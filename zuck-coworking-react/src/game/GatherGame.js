@@ -1,10 +1,11 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { OfficeScene } from './scenes/OfficeScene';
+import { getLocalUserId, getLocalUserName } from '../services/api';
 
 export function createGatherGame(containerId, config = {}) {
-    const userId = config.userId || window.USER_ID || 'guest';
-    const userName = config.userName || window.USER_NAME || 'Voce';
+    const userId = config.userId || window.USER_ID || getLocalUserId();
+    const userName = config.userName || window.USER_NAME || getLocalUserName();
 
     const game = new Phaser.Game({
         type: Phaser.AUTO,

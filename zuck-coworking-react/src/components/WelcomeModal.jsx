@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Building2, ArrowRight } from 'lucide-react';
+import { getLocalUserId } from '../services/api';
 
 const AVATAR_COLORS = [
     { name: 'blue', skin: '#f5d6b8', shirt: '#3498db', pants: '#1e3a5f', hair: '#3d2b1f' },
@@ -91,10 +92,10 @@ function hashString(str) {
 }
 
 export default function WelcomeModal({ onEnter }) {
-    const savedName = localStorage.getItem('coworking_display_name');
+    const savedName = localStorage.getItem('cowork_user_name') || localStorage.getItem('coworking_display_name');
     const [displayName, setDisplayName] = useState(savedName || window.USER_NAME || '');
     const [selectedColor, setSelectedColor] = useState(() => {
-        return hashString(window.USER_ID || 'guest') % AVATAR_COLORS.length;
+        return hashString(window.USER_ID || getLocalUserId()) % AVATAR_COLORS.length;
     });
     const [entering, setEntering] = useState(false);
     const canvasRef = useRef(null);
@@ -113,6 +114,7 @@ export default function WelcomeModal({ onEnter }) {
         setEntering(true);
         const name = displayName.trim();
         localStorage.setItem('coworking_display_name', name);
+        localStorage.setItem('cowork_user_name', name);
         onEnter(name);
     };
 

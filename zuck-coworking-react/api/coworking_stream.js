@@ -5,7 +5,7 @@ const redis = new Redis({
     token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN,
 });
 
-const HEARTBEAT_TTL = 60;
+const HEARTBEAT_TTL = 30;
 
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,11 +26,14 @@ export default async function handler(req, res) {
         // Get online users
         const allUsers = await redis.hgetall(`cowork:space:${spaceId}:users`) || {};
         const players = {};
+        const staleIds = [];
 
         for (const [uid, raw] of Object.entries(allUsers)) {
             const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
-            if (!user.is_online) continue;
-            if (now - user.last_heartbeat > HEARTBEAT_TTL * 1000) continue;
+            if (!user.is_online || now - user.last_heartbeat > HEARTBEAT_TTL * 1000) {
+                staleIds.push(uid);
+                continue;
+            }
 
             players[uid] = {
                 x: user.x,
@@ -42,6 +45,11 @@ export default async function handler(req, res) {
                 custom_message: user.custom_message || null,
                 current_room: user.current_room || null
             };
+        }
+
+        // Clean up stale users
+        if (staleIds.length > 0) {
+            await redis.hdel(`cowork:space:${spaceId}:users`, ...staleIds);
         }
 
         // Get signals for this user

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createGatherGame } from './game/GatherGame';
 import eventBus from './utils/eventBus';
 import sseService from './services/sse';
-import { joinSpace, leaveSpace, updatePosition, heartbeat, setDisplayName, sendSignal, lockRoom, unlockRoom } from './services/api';
+import { joinSpace, leaveSpace, updatePosition, heartbeat, setDisplayName, sendSignal, lockRoom, unlockRoom, getLocalUserId } from './services/api';
 import HUD from './components/HUD';
 import UserList from './components/UserList';
 import WelcomeModal from './components/WelcomeModal';
@@ -125,7 +125,7 @@ export default function App() {
         if (showWelcome) return;
         if (gameContainerRef.current && !gameRef.current) {
             gameRef.current = createGatherGame('phaser-container', {
-                userId: window.USER_ID || 'guest',
+                userId: window.USER_ID || getLocalUserId(),
                 userName: displayNameRef.current,
                 spaceId: window.SPACE_ID || 1,
             });
@@ -144,6 +144,10 @@ export default function App() {
         if (showWelcome) return;
         const spaceId = window.SPACE_ID || 1;
 
+        // Subscribe to events BEFORE connecting to avoid race condition
+        const unsubConnected = eventBus.on('sse:connected', () => setConnected(true));
+        const unsubDisconnected = eventBus.on('sse:disconnected', () => setConnected(false));
+
         joinSpace(spaceId).then((data) => {
             if (data.success && data.data?.users) {
                 setOnlineUsers(data.data.users);
@@ -156,9 +160,6 @@ export default function App() {
         heartbeatIntervalRef.current = setInterval(() => {
             heartbeat().catch(() => {});
         }, 15000);
-
-        const unsubConnected = eventBus.on('sse:connected', () => setConnected(true));
-        const unsubDisconnected = eventBus.on('sse:disconnected', () => setConnected(false));
 
         const unsubPlayers = eventBus.on('remote:players_update', (players, extra) => {
             setOnlineUsers(players);
@@ -236,8 +237,19 @@ export default function App() {
 
     // Handle window beforeunload
     useEffect(() => {
+        const isVercel = !window.location.pathname.startsWith('/conta/');
+        const leaveUrl = isVercel ? '/api/coworking?action=leave' : '/conta/api/coworking.php?action=leave';
         const handleUnload = () => {
-            navigator.sendBeacon?.('/conta/api/coworking.php?action=leave', '');
+            if (isVercel) {
+                // sendBeacon doesn't support custom headers, use fetch with keepalive
+                fetch(leaveUrl, {
+                    method: 'POST',
+                    headers: { 'X-User-Id': getLocalUserId() },
+                    keepalive: true
+                }).catch(() => {});
+            } else {
+                navigator.sendBeacon?.(leaveUrl, '');
+            }
         };
         window.addEventListener('beforeunload', handleUnload);
         return () => window.removeEventListener('beforeunload', handleUnload);
@@ -245,6 +257,8 @@ export default function App() {
 
     const handleWelcomeEnter = (name) => {
         setDisplayNameState(name);
+        localStorage.setItem('cowork_user_name', name);
+        localStorage.setItem('coworking_display_name', name);
         setDisplayName(name).catch(() => {});
         setShowWelcome(false);
     };
@@ -252,6 +266,7 @@ export default function App() {
     const handleNameChange = (newName) => {
         setDisplayNameState(newName);
         localStorage.setItem('coworking_display_name', newName);
+        localStorage.setItem('cowork_user_name', newName);
         setDisplayName(newName).catch(() => {});
         eventBus.emit('player:name_changed', newName);
     };
@@ -377,7 +392,7 @@ export default function App() {
     useEffect(() => {
         if (!currentRoom) return;
 
-        const myId = String(window.USER_ID || 'guest');
+        const myId = String(window.USER_ID || getLocalUserId());
         const peersInRoom = Object.entries(onlineUsers)
             .filter(([id, u]) => String(id) !== myId && u.current_room === currentRoom)
             .map(([id]) => id);
@@ -442,7 +457,7 @@ export default function App() {
         return <WelcomeModal onEnter={handleWelcomeEnter} />;
     }
 
-    const onlineCount = Object.keys(onlineUsers).length + 1;
+    const onlineCount = Math.max(1, Object.keys(onlineUsers).length);
 
     return (
         <div className="w-full h-full relative bg-[#1a1c2e]">
@@ -464,7 +479,7 @@ export default function App() {
                 currentRoom={currentRoom}
                 currentRoomName={currentRoomName}
                 roomLocked={!!roomLocks[currentRoom]}
-                peersInRoom={currentRoom ? Object.entries(onlineUsers).filter(([id, u]) => String(id) !== String(window.USER_ID || 'guest') && u.current_room === currentRoom).length : 0}
+                peersInRoom={currentRoom ? Object.entries(onlineUsers).filter(([id, u]) => String(id) !== String(window.USER_ID || getLocalUserId()) && u.current_room === currentRoom).length : 0}
                 onScreenShare={startScreenShare}
                 onLockRoom={handleLockRoom}
                 onUnlockRoom={handleUnlockRoom}
@@ -475,7 +490,7 @@ export default function App() {
             {showUserList && (
                 <UserList
                     users={onlineUsers}
-                    currentUserId={window.USER_ID}
+                    currentUserId={window.USER_ID || getLocalUserId()}
                     currentDisplayName={displayName}
                     onNameChange={handleNameChange}
                     onClose={() => setShowUserList(false)}
