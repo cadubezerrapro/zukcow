@@ -6,38 +6,54 @@ function useSpeaking(stream) {
     useEffect(() => {
         if (!stream) { setIsSpeaking(false); return; }
         const audioTracks = stream.getAudioTracks();
-        if (!audioTracks.length) { setIsSpeaking(false); return; }
+        if (!audioTracks.length || !audioTracks[0].enabled) { setIsSpeaking(false); return; }
 
-        let ctx;
-        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
-        catch { return; }
+        let cancelled = false;
+        let ctx, source, analyser, rafId;
 
-        const source = ctx.createMediaStreamSource(stream);
-        const analyser = ctx.createAnalyser();
-        analyser.fftSize = 512;
-        analyser.smoothingTimeConstant = 0.4;
-        source.connect(analyser);
+        const setup = async () => {
+            try {
+                ctx = new (window.AudioContext || window.webkitAudioContext)();
+                // Chrome suspends AudioContext until user interaction
+                if (ctx.state === 'suspended') await ctx.resume();
 
-        const data = new Uint8Array(analyser.frequencyBinCount);
-        let rafId;
-        let lastUpdate = 0;
+                source = ctx.createMediaStreamSource(stream);
+                analyser = ctx.createAnalyser();
+                analyser.fftSize = 256;
+                analyser.smoothingTimeConstant = 0.3;
+                source.connect(analyser);
 
-        const check = (ts) => {
-            rafId = requestAnimationFrame(check);
-            if (ts - lastUpdate < 100) return;
-            lastUpdate = ts;
-            analyser.getByteFrequencyData(data);
-            let sum = 0;
-            for (let i = 0; i < data.length; i++) sum += data[i];
-            const avg = sum / data.length;
-            setIsSpeaking(avg > 12);
+                const data = new Uint8Array(analyser.fftSize);
+                let lastUpdate = 0;
+
+                const check = (ts) => {
+                    if (cancelled) return;
+                    rafId = requestAnimationFrame(check);
+                    if (ts - lastUpdate < 80) return;
+                    lastUpdate = ts;
+
+                    // Use time domain data (amplitude) — more reliable than frequency
+                    analyser.getByteTimeDomainData(data);
+                    let maxDeviation = 0;
+                    for (let i = 0; i < data.length; i++) {
+                        const deviation = Math.abs(data[i] - 128);
+                        if (deviation > maxDeviation) maxDeviation = deviation;
+                    }
+                    setIsSpeaking(maxDeviation > 10);
+                };
+                rafId = requestAnimationFrame(check);
+            } catch (e) {
+                console.warn('VAD setup failed:', e);
+            }
         };
-        rafId = requestAnimationFrame(check);
+
+        setup();
 
         return () => {
-            cancelAnimationFrame(rafId);
-            source.disconnect();
-            ctx.close().catch(() => {});
+            cancelled = true;
+            if (rafId) cancelAnimationFrame(rafId);
+            if (source) source.disconnect();
+            if (ctx) ctx.close().catch(() => {});
         };
     }, [stream]);
 
