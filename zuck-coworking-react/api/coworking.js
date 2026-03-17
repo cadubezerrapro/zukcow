@@ -48,6 +48,8 @@ export default async function handler(req, res) {
             case 'lock_room': return await handleLockRoom(res, userId, req);
             case 'unlock_room': return await handleUnlockRoom(res, userId, req);
             case 'get_room_locks': return await handleGetRoomLocks(res, req);
+            case 'purge': return await handlePurge(res, req);
+            case 'debug_users': return await handleDebugUsers(res, req);
             default:
                 return res.json({ success: false, message: 'Acao invalida' });
         }
@@ -303,6 +305,30 @@ async function handleGetRoomLocks(res, req) {
     }
 
     return res.json({ success: true, locks });
+}
+
+// Purge all users from a space (admin cleanup)
+async function handlePurge(res, req) {
+    const spaceId = parseInt(req.query.space_id || '1');
+    await redis.del(`cowork:space:${spaceId}:users`);
+    return res.json({ success: true, message: `Todos usuarios do space ${spaceId} removidos` });
+}
+
+// Debug: show raw user data in Redis
+async function handleDebugUsers(res, req) {
+    const spaceId = parseInt(req.query.space_id || '1');
+    const allUsers = await redis.hgetall(`cowork:space:${spaceId}:users`) || {};
+    const now = Date.now();
+    const debug = {};
+    for (const [uid, raw] of Object.entries(allUsers)) {
+        const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
+        debug[uid] = {
+            ...user,
+            _age_seconds: Math.round((now - user.last_heartbeat) / 1000),
+            _expired: (now - user.last_heartbeat) > HEARTBEAT_TTL * 1000
+        };
+    }
+    return res.json({ success: true, space_id: spaceId, heartbeat_ttl: HEARTBEAT_TTL, users: debug });
 }
 
 // --- Helpers ---
