@@ -1,8 +1,53 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { Mic, MicOff } from 'lucide-react';
+
+function useSpeaking(stream) {
+    const [isSpeaking, setIsSpeaking] = useState(false);
+
+    useEffect(() => {
+        if (!stream) { setIsSpeaking(false); return; }
+        const audioTracks = stream.getAudioTracks();
+        if (!audioTracks.length) { setIsSpeaking(false); return; }
+
+        let ctx;
+        try { ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+        catch { return; }
+
+        const source = ctx.createMediaStreamSource(stream);
+        const analyser = ctx.createAnalyser();
+        analyser.fftSize = 512;
+        analyser.smoothingTimeConstant = 0.4;
+        source.connect(analyser);
+
+        const data = new Uint8Array(analyser.frequencyBinCount);
+        let rafId;
+        let lastUpdate = 0;
+
+        const check = (ts) => {
+            rafId = requestAnimationFrame(check);
+            if (ts - lastUpdate < 100) return;
+            lastUpdate = ts;
+            analyser.getByteFrequencyData(data);
+            let sum = 0;
+            for (let i = 0; i < data.length; i++) sum += data[i];
+            const avg = sum / data.length;
+            setIsSpeaking(avg > 12);
+        };
+        rafId = requestAnimationFrame(check);
+
+        return () => {
+            cancelAnimationFrame(rafId);
+            source.disconnect();
+            ctx.close().catch(() => {});
+        };
+    }, [stream]);
+
+    return isSpeaking;
+}
 
 function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
     const videoRef = useRef(null);
+    const isSpeaking = useSpeaking(stream);
 
     useEffect(() => {
         if (videoRef.current && stream) {
@@ -25,8 +70,8 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                 borderRadius: '50%',
                 overflow: 'hidden',
                 background: hasVideo ? '#000' : 'linear-gradient(135deg, #334155, #1e293b)',
-                border: `4px solid ${micEnabled ? '#22c55e' : '#475569'}`,
-                boxShadow: micEnabled
+                border: `4px solid ${isSpeaking ? '#22c55e' : '#475569'}`,
+                boxShadow: isSpeaking
                     ? '0 0 16px rgba(34,197,94,0.4), 0 6px 20px rgba(0,0,0,0.5)'
                     : '0 6px 20px rgba(0,0,0,0.5)',
                 position: 'relative',
