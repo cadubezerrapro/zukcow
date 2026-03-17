@@ -1,0 +1,169 @@
+import React from 'react';
+import { Users, Wifi, WifiOff, ChevronRight, ChevronLeft, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen } from 'lucide-react';
+
+export default function HUD({
+    connected, onlineCount, showUserList, onToggleUserList,
+    micEnabled, camEnabled, onToggleMic, onToggleCam,
+    currentRoom, currentRoomName, roomLocked, peersInRoom,
+    onScreenShare, onLockRoom, onUnlockRoom,
+    nearSeat, isSitting
+}) {
+    return (
+        <div className="gather-hud">
+            {/* Top Bar */}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+                {/* Logo & Connection Status */}
+                <div className="flex items-center gap-3 pointer-events-auto">
+                    <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-3">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
+                                <span className="text-white font-bold text-sm">Z</span>
+                            </div>
+                            <div>
+                                <h1 className="text-white text-sm font-semibold leading-tight">ZuckPay Co-Work</h1>
+                                <p className="text-gray-400 text-[10px]">Escritorio Virtual</p>
+                            </div>
+                        </div>
+                        <div className="w-px h-6 bg-gather-border mx-1" />
+                        {connected ? (
+                            <div className="flex items-center gap-1.5 text-emerald-400">
+                                <Wifi size={14} />
+                                <span className="text-xs">Conectado</span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1.5 text-red-400">
+                                <WifiOff size={14} />
+                                <span className="text-xs">Reconectando...</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Room indicator */}
+                    {currentRoomName && (
+                        <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-2">
+                            <DoorOpen size={14} className="text-purple-400" />
+                            <span className="text-white text-sm font-medium">{currentRoomName}</span>
+                            {peersInRoom > 0 && (
+                                <span className="text-xs text-emerald-400 ml-1">({peersInRoom} conectado{peersInRoom > 1 ? 's' : ''})</span>
+                            )}
+                            {roomLocked && <Lock size={12} className="text-yellow-400 ml-1" />}
+                        </div>
+                    )}
+                </div>
+
+                {/* Online Count & User List Toggle */}
+                <div className="flex items-center gap-2 pointer-events-auto">
+                    <button
+                        onClick={onToggleUserList}
+                        className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-gray-700/90 transition-colors cursor-pointer"
+                    >
+                        <Users size={16} className="text-gather-blue" />
+                        <span className="text-white text-sm font-medium">{onlineCount}</span>
+                        <span className="text-gray-400 text-xs">online</span>
+                        {showUserList ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronLeft size={14} className="text-gray-400" />}
+                    </button>
+                </div>
+            </div>
+
+            {/* Seat Prompt */}
+            {(nearSeat || isSitting) && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 animate-bounce">
+                    <div className="bg-gather-card/95 backdrop-blur-sm border border-purple-500/50 rounded-xl px-4 py-2 flex items-center gap-2 shadow-lg">
+                        <kbd className="bg-purple-600 text-white text-xs px-2 py-0.5 rounded font-mono font-bold">X</kbd>
+                        <span className="text-white text-sm font-medium">
+                            {isSitting ? 'Levantar' : 'Sentar'}
+                        </span>
+                    </div>
+                </div>
+            )}
+
+            {/* Bottom Controls */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+                <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-3 py-2 flex items-center gap-3">
+                    {/* Mic Button */}
+                    <button
+                        onClick={onToggleMic}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                            micEnabled
+                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                        }`}
+                        title={micEnabled ? 'Desligar microfone' : 'Ligar microfone'}
+                    >
+                        {micEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+                    </button>
+
+                    {/* Camera Button */}
+                    <button
+                        onClick={onToggleCam}
+                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                            camEnabled
+                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                : 'bg-gray-600/40 text-gray-400 hover:bg-gray-600/60'
+                        }`}
+                        title={camEnabled ? 'Desligar camera' : 'Ligar camera'}
+                    >
+                        {camEnabled ? <Video size={18} /> : <VideoOff size={18} />}
+                    </button>
+
+                    {/* Screen Share — only visible when in a room with peers */}
+                    {currentRoom && peersInRoom > 0 && (
+                        <>
+                            <div className="w-px h-6 bg-gather-border" />
+                            <button
+                                onClick={onScreenShare}
+                                className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all cursor-pointer"
+                                title="Compartilhar tela"
+                            >
+                                <Monitor size={18} />
+                            </button>
+                        </>
+                    )}
+
+                    {/* Lock/Unlock Room — only when in room with 2+ people */}
+                    {currentRoom && peersInRoom > 0 && (
+                        <>
+                            {roomLocked ? (
+                                <button
+                                    onClick={onUnlockRoom}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-all cursor-pointer"
+                                    title="Destrancar sala"
+                                >
+                                    <Unlock size={18} />
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={onLockRoom}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-600/40 text-gray-400 hover:bg-gray-600/60 transition-all cursor-pointer"
+                                    title="Trancar sala"
+                                >
+                                    <Lock size={18} />
+                                </button>
+                            )}
+                        </>
+                    )}
+
+                    <div className="w-px h-6 bg-gather-border" />
+
+                    {/* Movement keys */}
+                    <div className="flex items-center gap-1.5">
+                        <kbd className="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded font-mono">W</kbd>
+                        <kbd className="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded font-mono">A</kbd>
+                        <kbd className="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded font-mono">S</kbd>
+                        <kbd className="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded font-mono">D</kbd>
+                        <span className="text-gray-400 text-[10px] ml-1">Mover</span>
+                    </div>
+                    <div className="w-px h-4 bg-gather-border" />
+                    <div className="flex items-center gap-1.5">
+                        <kbd className="bg-gray-700 text-gray-300 text-[10px] px-1.5 py-0.5 rounded font-mono">X</kbd>
+                        <span className="text-gray-400 text-[10px] ml-1">{isSitting ? 'Sair' : 'Sentar'}</span>
+                    </div>
+                    <div className="w-px h-4 bg-gather-border" />
+                    <div className="flex items-center gap-1.5">
+                        <span className="text-gray-400 text-[10px]">Scroll zoom</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}

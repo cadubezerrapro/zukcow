@@ -1,0 +1,869 @@
+import Phaser from 'phaser';
+import eventBus from '../../utils/eventBus';
+import mapData from '../maps/default_office.json';
+
+const TILE_SIZE = 64;
+const PLAYER_SPEED = 320;
+const POSITION_SEND_INTERVAL = 100;
+const AVATAR_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gray'];
+
+const ROOM_ZONES = [
+    { id: 'conferencia', name: 'Sala de Conferencia', x1: 2, y1: 12, x2: 18, y2: 17 },
+    { id: 'colaborativa', name: 'Area Colaborativa', x1: 20, y1: 12, x2: 40, y2: 17 },
+    { id: 'escritorios', name: 'Escritorios', x1: 42, y1: 12, x2: 58, y2: 17 },
+    { id: 'servidor', name: 'Server Room', x1: 60, y1: 12, x2: 68, y2: 17 },
+    { id: 'workspace_a', name: 'Workspace A', x1: 2, y1: 19, x2: 25, y2: 25 },
+    { id: 'workspace_b', name: 'Workspace B', x1: 27, y1: 19, x2: 50, y2: 25 },
+    { id: 'reuniao1', name: 'Reuniao 1', x1: 52, y1: 19, x2: 60, y2: 25 },
+    { id: 'reuniao2', name: 'Reuniao 2', x1: 61, y1: 19, x2: 68, y2: 25 },
+    { id: 'lounge', name: 'Lounge / Cafeteria', x1: 2, y1: 27, x2: 30, y2: 34 },
+    { id: 'descanso', name: 'Area de Descanso', x1: 32, y1: 27, x2: 50, y2: 34 },
+    { id: 'gameroom', name: 'Game Room', x1: 52, y1: 27, x2: 68, y2: 34 },
+];
+
+export class OfficeScene extends Phaser.Scene {
+    constructor() {
+        super({ key: 'OfficeScene' });
+        this.remotePlayers = {};
+        this.lastSentPosition = { x: 0, y: 0, direction: 'down' };
+        this.lastSendTime = 0;
+        this.playerDirection = 'down';
+        this.currentRoom = null;
+        this.isSitting = false;
+        this.currentSeat = null;
+        // Furniture editor
+        this.editorMode = false;
+        this.movingFurniture = null;
+        this.editorHighlight = null;
+    }
+
+    create() {
+        this.userId = this.registry.get('userId');
+        this.userName = this.registry.get('userName');
+
+        this.createMap();
+        this.createPlayer();
+        this.setupCamera();
+        this.setupInput();
+        this.setupEventBus();
+
+        eventBus.emit('scene:ready', {
+            mapWidth: this.map.widthInPixels,
+            mapHeight: this.map.heightInPixels
+        });
+    }
+
+    createMap() {
+        this.cache.tilemap.add('office', { format: Phaser.Tilemaps.Formats.TILED_JSON, data: mapData });
+        this.map = this.make.tilemap({ key: 'office' });
+
+        const tileset = this.map.addTilesetImage('office_tiles', 'office_tiles', 64, 64, 1, 2);
+
+        this.groundLayer = this.map.createLayer('ground', tileset, 0, 0);
+        this.wallsLayer = this.map.createLayer('walls', tileset, 0, 0);
+        this.wallsLayer.setCollisionByExclusion([0, -1]);
+
+        // Non-collidable tiles: door(4), ceiling_light(34), rug(39), carpets, lily_pad(63), paintings, clock, etc
+        const NON_COLLIDE = [4, 34, 39, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40];
+        NON_COLLIDE.forEach(gid => this.wallsLayer.setCollision(gid, false));
+
+        // 3rd layer: furniture_front — renders ABOVE the player for depth effect
+        this.frontLayer = this.map.createLayer('furniture_front', tileset, 0, 0);
+        if (this.frontLayer) {
+            this.frontLayer.setDepth(20);
+        }
+
+        this.autoRotateChairs();
+        this.resetNonRotatableTiles();
+        this.applyMapEdits();
+        this.addRoomLabels();
+    }
+
+    autoRotateChairs() {
+        const CHAIR_TILES = [27, 28, 36, 125, 126]; // sofa(27), chair(28), puff(36), sofa2x1_L(125), sofa2x1_R(126) GIDs
+        const DESK_TILES = [23, 24, 121, 122, 123, 124];  // desk(23), meeting table(24), desk2x2 parts GIDs
+        // Chair sprite faces DOWN by default. Rotation is CW.
+        // To face UP (desk above): 180°. To face LEFT (desk left): 270°. To face RIGHT (desk right): 90°.
+        const dirs = [
+            { dx: 0, dy: -1, angle: Math.PI },           // desk above → face up (180°)
+            { dx: 0, dy: 1, angle: 0 },                  // desk below → face down (0°, default)
+            { dx: -1, dy: 0, angle: Math.PI * 1.5 },     // desk left → face left (270°)
+            { dx: 1, dy: 0, angle: Math.PI * 0.5 }       // desk right → face right (90°)
+        ];
+
+        this.wallsLayer.forEachTile(tile => {
+            if (!CHAIR_TILES.includes(tile.index)) return;
+            for (const d of dirs) {
+                const adj = this.wallsLayer.getTileAt(tile.x + d.dx, tile.y + d.dy)
+                         || (this.frontLayer && this.frontLayer.getTileAt(tile.x + d.dx, tile.y + d.dy));
+                if (adj && DESK_TILES.includes(adj.index)) {
+                    tile.rotation = d.angle;
+                    break;
+                }
+            }
+        });
+    }
+
+    resetNonRotatableTiles() {
+        // Reset rotation/flip on tiles that shouldn't be rotated
+        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36, 82, 83, 89, 93, 107, 108, 109, 110]);
+        this.wallsLayer.forEachTile(tile => {
+            if (tile.index >= 23 && tile.index <= 142 && !ROTATABLE.has(tile.index)) {
+                tile.rotation = 0;
+                tile.flipX = false;
+                tile.flipY = false;
+            }
+        });
+    }
+
+    applyMapEdits() {
+        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        try {
+            const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
+            edits.forEach(edit => {
+                if (edit.type === 'rotate') {
+                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
+                } else if (edit.type === 'delete') {
+                    this.wallsLayer.removeTileAt(edit.x, edit.y);
+                } else if (edit.type === 'flip') {
+                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    if (tile) tile.flipX = edit.flipX;
+                } else if (edit.type === 'place') {
+                    this.wallsLayer.putTileAt(edit.tileId, edit.x, edit.y);
+                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    if (tile && edit.rotation) tile.rotation = edit.rotation;
+                }
+            });
+        } catch (e) {
+            // Ignore corrupted data
+        }
+    }
+
+    saveMapEdit(edit) {
+        try {
+            const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
+            edits.push(edit);
+            localStorage.setItem('coworking_map_edits', JSON.stringify(edits));
+        } catch (e) {
+            // Ignore storage errors
+        }
+    }
+
+    addRoomLabels() {
+        const labels = [
+            { x: 22, y: 14, text: 'Sala 1', color: '#3498db' },
+            { x: 33, y: 14, text: 'Sala 2', color: '#3498db' },
+            { x: 43, y: 14, text: 'Sala 3', color: '#3498db' },
+            { x: 53, y: 14, text: 'Sala 4', color: '#3498db' },
+            { x: 22, y: 21, text: 'Workspace A', color: '#8bc34a' },
+            { x: 33, y: 21, text: 'Workspace B', color: '#8bc34a' },
+            { x: 43, y: 21, text: 'Area Aberta', color: '#f59e0b' },
+            { x: 53, y: 21, text: 'Reuniao', color: '#ec4899' },
+            { x: 25, y: 28, text: 'Sala de Conferencia', color: '#8b5cf6' },
+            { x: 45, y: 28, text: 'Area Colaborativa', color: '#14b8a6' },
+            { x: 31, y: 36, text: 'Lounge / Cafeteria', color: '#f59e0b' },
+            { x: 53, y: 36, text: 'Descanso', color: '#ec4899' },
+        ];
+
+        labels.forEach(({ x, y, text, color }) => {
+            this.add.text(x * TILE_SIZE, y * TILE_SIZE, text, {
+                fontSize: '22px',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fill: color,
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 3,
+                backgroundColor: 'rgba(0,0,0,0.75)',
+                padding: { x: 12, y: 6 },
+                resolution: 2,
+                shadow: { offsetX: 0, offsetY: 2, color: 'rgba(0,0,0,0.6)', blur: 6, fill: true }
+            }).setDepth(5);
+        });
+    }
+
+    createPlayer() {
+        let spawnX = 34 * TILE_SIZE;
+        let spawnY = 24 * TILE_SIZE;
+
+        const furniture = this.map.getObjectLayer('furniture');
+        if (furniture) {
+            const spawn = furniture.objects.find(o => o.type === 'spawn');
+            if (spawn) {
+                spawnX = spawn.x;
+                spawnY = spawn.y;
+            }
+        }
+
+        const colorIdx = this.hashString(this.userId) % AVATAR_COLORS.length;
+        this.avatarColor = AVATAR_COLORS[colorIdx];
+
+        this.player = this.physics.add.sprite(spawnX, spawnY, `char_${this.avatarColor}`, 0);
+        this.player.setScale(2);
+        this.player.setSize(20, 12);
+        this.player.setOffset(6, 36);
+        this.player.setDepth(10);
+        this.player.setCollideWorldBounds(true);
+
+        this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+        this.physics.add.collider(this.player, this.wallsLayer);
+
+        this.createAnimations(this.avatarColor);
+
+        // Name label with inline green dot
+        this.playerNameLabel = this.add.text(0, 0, `\u25CF ${this.userName}`, {
+            fontSize: '16px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fill: '#ffffff',
+            fontStyle: 'bold',
+            backgroundColor: 'rgba(20,20,30,0.8)',
+            padding: { x: 10, y: 5 },
+            align: 'center',
+            resolution: 2,
+            shadow: { offsetX: 0, offsetY: 1, color: 'rgba(0,0,0,0.5)', blur: 4, fill: true }
+        }).setOrigin(0.5, 1).setDepth(15);
+        this.onlineDotOverlay = this.add.circle(0, 0, 5, 0x22c55e).setDepth(16);
+        this.onlineDotGlow = this.add.circle(0, 0, 8, 0x22c55e, 0.25).setDepth(15);
+    }
+
+    createAnimations(colorName) {
+        const key = `char_${colorName}`;
+        const dirs = ['down', 'left', 'right', 'up'];
+
+        dirs.forEach((dir, d) => {
+            const animKey = `${key}_walk_${dir}`;
+            if (!this.anims.exists(animKey)) {
+                this.anims.create({
+                    key: animKey,
+                    frames: [
+                        { key, frame: d * 3 },
+                        { key, frame: d * 3 + 1 },
+                        { key, frame: d * 3 },
+                        { key, frame: d * 3 + 2 }
+                    ],
+                    frameRate: 8,
+                    repeat: -1
+                });
+            }
+
+            const idleKey = `${key}_idle_${dir}`;
+            if (!this.anims.exists(idleKey)) {
+                this.anims.create({
+                    key: idleKey,
+                    frames: [{ key, frame: d * 3 }],
+                    frameRate: 1,
+                    repeat: 0
+                });
+            }
+        });
+    }
+
+    setupCamera() {
+        this.cameras.main.setRoundPixels(true);
+        this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
+        this.cameras.main.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
+        this.cameras.main.setZoom(0.75);
+
+        this.input.on('wheel', (pointer, gameObjects, deltaX, deltaY) => {
+            const zoom = this.cameras.main.zoom;
+            const newZoom = Phaser.Math.Clamp(zoom - deltaY * 0.003, 0.4, 1.5);
+            this.cameras.main.setZoom(newZoom);
+        });
+    }
+
+    setupInput() {
+        this.cursors = this.input.keyboard.createCursorKeys();
+        this.wasd = this.input.keyboard.addKeys({
+            up: Phaser.Input.Keyboard.KeyCodes.W,
+            down: Phaser.Input.Keyboard.KeyCodes.S,
+            left: Phaser.Input.Keyboard.KeyCodes.A,
+            right: Phaser.Input.Keyboard.KeyCodes.D,
+        });
+
+        // X key to sit/stand
+        this.input.keyboard.on('keydown-X', () => {
+            if (this.isSitting) {
+                this.standUp();
+            } else if (this._lastNearSeat) {
+                this.sitDown(this._lastNearSeat);
+            }
+        });
+
+        // ESC to cancel move or deselect
+        this.input.keyboard.on('keydown-ESC', () => {
+            if (this.movingFurniture) {
+                this.movingFurniture = null;
+                eventBus.emit('furniture:move_end');
+            }
+            eventBus.emit('furniture:deselected');
+        });
+
+        // Editor highlight rectangle
+        this.editorHighlight = this.add.rectangle(0, 0, TILE_SIZE, TILE_SIZE)
+            .setStrokeStyle(3, 0xfbbf24)
+            .setFillStyle(0xfbbf24, 0.15)
+            .setDepth(20)
+            .setVisible(false);
+
+        // Furniture editor pointer events
+        this.input.on('pointermove', (pointer) => {
+            if (!this.editorMode) {
+                this.editorHighlight.setVisible(false);
+                return;
+            }
+            const worldPt = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+            const tile = this.wallsLayer.getTileAtWorldXY(worldPt.x, worldPt.y);
+            const isFurniture = tile && tile.index >= 23 && tile.index <= 142;
+
+            if (isFurniture) {
+                this.editorHighlight.setPosition(tile.pixelX + TILE_SIZE / 2, tile.pixelY + TILE_SIZE / 2);
+                this.editorHighlight.setVisible(true);
+                eventBus.emit('furniture:hover', {
+                    tileX: tile.x, tileY: tile.y,
+                    tileId: tile.index,
+                    worldX: tile.pixelX + TILE_SIZE / 2,
+                    worldY: tile.pixelY
+                });
+            } else {
+                this.editorHighlight.setVisible(false);
+                eventBus.emit('furniture:hover', null);
+            }
+
+            // Moving preview
+            if (this.movingFurniture) {
+                const tileXY = this.wallsLayer.worldToTileXY(worldPt.x, worldPt.y);
+                if (tileXY) {
+                    this.editorHighlight.setPosition(
+                        tileXY.x * TILE_SIZE + TILE_SIZE / 2,
+                        tileXY.y * TILE_SIZE + TILE_SIZE / 2
+                    );
+                    this.editorHighlight.setVisible(true);
+                    this.editorHighlight.setStrokeStyle(3, 0x22c55e);
+                }
+            } else {
+                this.editorHighlight.setStrokeStyle(3, 0xfbbf24);
+            }
+        });
+
+        this.input.on('pointerdown', (pointer) => {
+            if (!this.editorMode) return;
+            const worldPt = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+
+            // If moving, place furniture at clicked position
+            if (this.movingFurniture) {
+                const tileXY = this.wallsLayer.worldToTileXY(worldPt.x, worldPt.y);
+                if (tileXY) {
+                    const existing = this.wallsLayer.getTileAt(tileXY.x, tileXY.y);
+                    if (!existing || existing.index <= 0) {
+                        this.wallsLayer.putTileAt(this.movingFurniture.tileId, tileXY.x, tileXY.y);
+                        this.saveMapEdit({ type: 'place', x: tileXY.x, y: tileXY.y, tileId: this.movingFurniture.tileId });
+                    }
+                }
+                this.movingFurniture = null;
+                eventBus.emit('furniture:move_end');
+                return;
+            }
+
+            // Select furniture
+            const tile = this.wallsLayer.getTileAtWorldXY(worldPt.x, worldPt.y);
+            if (tile && tile.index >= 23 && tile.index <= 142) {
+                eventBus.emit('furniture:selected', {
+                    tileX: tile.x, tileY: tile.y,
+                    tileId: tile.index,
+                    worldX: tile.pixelX + TILE_SIZE / 2,
+                    worldY: tile.pixelY
+                });
+            } else {
+                eventBus.emit('furniture:deselected');
+            }
+        });
+    }
+
+    setupEventBus() {
+        eventBus.on('remote:players_update', (players) => {
+            this.updateRemotePlayers(players);
+        });
+
+        eventBus.on('remote:player_joined', (player) => {
+            this.addRemotePlayer(player);
+        });
+
+        eventBus.on('remote:player_left', (userId) => {
+            this.removeRemotePlayer(userId);
+        });
+
+        // Listen for name changes from React
+        eventBus.on('player:name_changed', (newName) => {
+            this.userName = newName;
+            if (this.playerNameLabel) {
+                this.playerNameLabel.setText(`\u25CF ${newName}`);
+            }
+        });
+
+        // Furniture editor commands
+        eventBus.on('editor:toggle', (enabled) => {
+            this.editorMode = enabled;
+            if (!enabled) {
+                this.editorHighlight.setVisible(false);
+                this.movingFurniture = null;
+            }
+        });
+
+        eventBus.on('furniture:start_move', (info) => {
+            this.wallsLayer.removeTileAt(info.tileX, info.tileY);
+            this.movingFurniture = info;
+            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY });
+        });
+
+        eventBus.on('furniture:do_delete', (info) => {
+            this.wallsLayer.removeTileAt(info.tileX, info.tileY);
+            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY });
+            eventBus.emit('furniture:deselected');
+        });
+
+        // Duplicate: keep original, enter placing mode with same tileId
+        eventBus.on('furniture:duplicate', (info) => {
+            this.movingFurniture = { ...info };
+        });
+
+        // Rotate: cycle 0° → 90° → 180° → 270° → 0°
+        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        eventBus.on('furniture:rotate', (info) => {
+            const tile = this.wallsLayer.getTileAt(info.tileX, info.tileY);
+            if (!tile || !ROTATABLE.has(tile.index)) return;
+            const step = Math.PI / 2;
+            tile.rotation = ((tile.rotation || 0) + step) % (Math.PI * 2);
+            this.saveMapEdit({ type: 'rotate', x: info.tileX, y: info.tileY, rotation: tile.rotation });
+            eventBus.emit('furniture:selected', { ...info, rotation: tile.rotation });
+        });
+    }
+
+    update(time) {
+        if (!this.player) return;
+
+        this.handleMovement();
+        this.updateNameLabel();
+        this.detectRoom();
+        this.checkSeatProximity();
+        this.sendPosition(time);
+        this.updateRemotePlayerInterpolation(time);
+        this.updateAnimatedTiles(time);
+
+        eventBus.emit('player:position', {
+            x: this.player.x,
+            y: this.player.y,
+            direction: this.playerDirection,
+            room: this.currentRoom
+        });
+
+        // Emit camera info for React overlays (VideoBubbles)
+        const cam = this.cameras.main;
+        eventBus.emit('camera:update', {
+            scrollX: cam.scrollX,
+            scrollY: cam.scrollY,
+            zoom: cam.zoom,
+            width: cam.width,
+            height: cam.height
+        });
+    }
+
+    handleMovement() {
+        // If sitting, block movement — only X key to stand up
+        if (this.isSitting) {
+            this.player.setVelocity(0, 0);
+            return;
+        }
+
+        const speed = PLAYER_SPEED;
+        let vx = 0;
+        let vy = 0;
+
+        if (this.cursors.left.isDown || this.wasd.left.isDown) {
+            vx = -speed;
+            this.playerDirection = 'left';
+        } else if (this.cursors.right.isDown || this.wasd.right.isDown) {
+            vx = speed;
+            this.playerDirection = 'right';
+        }
+
+        if (this.cursors.up.isDown || this.wasd.up.isDown) {
+            vy = -speed;
+            if (vx === 0) this.playerDirection = 'up';
+        } else if (this.cursors.down.isDown || this.wasd.down.isDown) {
+            vy = speed;
+            if (vx === 0) this.playerDirection = 'down';
+        }
+
+        if (vx !== 0 && vy !== 0) {
+            vx *= 0.707;
+            vy *= 0.707;
+        }
+
+        this.player.setVelocity(vx, vy);
+
+        const animKey = `char_${this.avatarColor}`;
+        if (vx !== 0 || vy !== 0) {
+            this.player.anims.play(`${animKey}_walk_${this.playerDirection}`, true);
+        } else {
+            this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
+        }
+    }
+
+    updateNameLabel() {
+        this.playerNameLabel.setPosition(this.player.x, this.player.y - 56);
+        // Position green dot overlay on top of the "●" character inside the label
+        const labelLeft = this.playerNameLabel.x - this.playerNameLabel.width * this.playerNameLabel.originX;
+        const dotX = labelLeft + 12; // aligned with the ● char (padding 8 + ~4 center of char)
+        const dotY = this.playerNameLabel.y - this.playerNameLabel.height * this.playerNameLabel.originY + this.playerNameLabel.height / 2;
+        this.onlineDotOverlay.setPosition(dotX, dotY);
+        this.onlineDotGlow.setPosition(dotX, dotY);
+    }
+
+    sendPosition(time) {
+        if (time - this.lastSendTime < POSITION_SEND_INTERVAL) return;
+
+        const x = Math.round(this.player.x);
+        const y = Math.round(this.player.y);
+        const dir = this.playerDirection;
+
+        if (x === this.lastSentPosition.x && y === this.lastSentPosition.y && dir === this.lastSentPosition.direction) {
+            return;
+        }
+
+        this.lastSentPosition = { x, y, direction: dir };
+        this.lastSendTime = time;
+
+        eventBus.emit('player:moved', { x, y, direction: dir });
+    }
+
+    // --- Remote Players ---
+
+    updateRemotePlayers(players) {
+        const remoteUserIds = new Set();
+
+        Object.entries(players).forEach(([id, data]) => {
+            if (String(id) === String(this.userId)) return;
+            remoteUserIds.add(String(id));
+
+            if (this.remotePlayers[id]) {
+                this.remotePlayers[id].targetX = data.x;
+                this.remotePlayers[id].targetY = data.y;
+                this.remotePlayers[id].targetDirection = data.direction || 'down';
+                // Update name if changed
+                if (data.name && this.remotePlayers[id].nameLabel) {
+                    this.remotePlayers[id].nameLabel.setText(`\u25CF ${data.name}`);
+                }
+            } else {
+                this.addRemotePlayer({
+                    user_id: id,
+                    x: data.x,
+                    y: data.y,
+                    direction: data.direction || 'down',
+                    name: data.name || `User ${id}`,
+                    avatar_sprite: data.avatar_sprite || 'default'
+                });
+            }
+        });
+
+        Object.keys(this.remotePlayers).forEach(id => {
+            if (!remoteUserIds.has(id)) {
+                this.removeRemotePlayer(id);
+            }
+        });
+    }
+
+    addRemotePlayer(data) {
+        const id = String(data.user_id);
+        if (this.remotePlayers[id] || id === String(this.userId)) return;
+
+        const colorIdx = this.hashString(id) % AVATAR_COLORS.length;
+        const colorName = AVATAR_COLORS[colorIdx];
+
+        this.createAnimations(colorName);
+
+        const sprite = this.add.sprite(data.x, data.y, `char_${colorName}`, 0);
+        sprite.setScale(2);
+        sprite.setDepth(10);
+
+        const nameLabel = this.add.text(data.x, data.y - 56, `\u25CF ${data.name}`, {
+            fontSize: '14px',
+            fontFamily: 'Inter, system-ui, sans-serif',
+            fill: '#e2e8f0',
+            backgroundColor: 'rgba(20,20,30,0.8)',
+            padding: { x: 8, y: 4 },
+            align: 'center',
+            resolution: 2,
+            shadow: { offsetX: 0, offsetY: 1, color: 'rgba(0,0,0,0.5)', blur: 4, fill: true }
+        }).setOrigin(0.5, 1).setDepth(15);
+
+        const dot = this.add.circle(0, 0, 4, 0x22c55e).setDepth(16);
+
+        this.remotePlayers[id] = {
+            sprite,
+            nameLabel,
+            dot,
+            colorName,
+            targetX: data.x,
+            targetY: data.y,
+            targetDirection: data.direction || 'down',
+            currentDirection: data.direction || 'down',
+            lastInterpTime: 0
+        };
+    }
+
+    removeRemotePlayer(userId) {
+        const id = String(userId);
+        const rp = this.remotePlayers[id];
+        if (!rp) return;
+
+        rp.sprite.destroy();
+        rp.nameLabel.destroy();
+        rp.dot.destroy();
+        delete this.remotePlayers[id];
+    }
+
+    updateRemotePlayerInterpolation(time) {
+        const now = time || performance.now();
+
+        Object.values(this.remotePlayers).forEach(rp => {
+            const dx = rp.targetX - rp.sprite.x;
+            const dy = rp.targetY - rp.sprite.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 2) {
+                // Teleport threshold: if very far (room change, etc), snap instantly
+                if (dist > 500) {
+                    rp.sprite.x = rp.targetX;
+                    rp.sprite.y = rp.targetY;
+                } else {
+                    // Move at constant speed toward target (matches real player speed)
+                    const moveSpeed = PLAYER_SPEED * 1.2; // slightly faster to catch up
+                    const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
+                    const maxMove = moveSpeed * Math.min(dt, 0.05); // cap dt to avoid huge jumps
+
+                    if (dist <= maxMove) {
+                        rp.sprite.x = rp.targetX;
+                        rp.sprite.y = rp.targetY;
+                    } else {
+                        const ratio = maxMove / dist;
+                        rp.sprite.x += dx * ratio;
+                        rp.sprite.y += dy * ratio;
+                    }
+                }
+
+                // Walking animation
+                const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
+                rp.sprite.anims.play(animKey, true);
+            } else {
+                rp.sprite.x = rp.targetX;
+                rp.sprite.y = rp.targetY;
+
+                const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
+                rp.sprite.anims.play(idleKey, true);
+            }
+
+            rp.lastInterpTime = now;
+
+            rp.nameLabel.setPosition(rp.sprite.x, rp.sprite.y - 56);
+            // Position dot overlay on the ● character inside the label
+            const rlLeft = rp.nameLabel.x - rp.nameLabel.width * rp.nameLabel.originX;
+            rp.dot.setPosition(
+                rlLeft + 10,
+                rp.nameLabel.y - rp.nameLabel.height * rp.nameLabel.originY + rp.nameLabel.height / 2
+            );
+        });
+    }
+
+    // ==========================================
+    // ROOM ZONE DETECTION
+    // ==========================================
+    detectRoom() {
+        const tileX = Math.floor(this.player.x / TILE_SIZE);
+        const tileY = Math.floor(this.player.y / TILE_SIZE);
+
+        for (const room of ROOM_ZONES) {
+            if (tileX >= room.x1 && tileX <= room.x2 && tileY >= room.y1 && tileY <= room.y2) {
+                if (this.currentRoom !== room.id) {
+                    const oldRoom = this.currentRoom;
+                    this.currentRoom = room.id;
+                    eventBus.emit('room:entered', { roomId: room.id, name: room.name });
+                    if (oldRoom) eventBus.emit('room:left', { roomId: oldRoom });
+                }
+                return;
+            }
+        }
+
+        if (this.currentRoom) {
+            const oldRoom = this.currentRoom;
+            this.currentRoom = null;
+            eventBus.emit('room:left', { roomId: oldRoom });
+        }
+    }
+
+    // ==========================================
+    // SEAT SYSTEM
+    // ==========================================
+    checkSeatProximity() {
+        if (this.isSitting) return;
+
+        const tileX = Math.floor(this.player.x / TILE_SIZE);
+        const tileY = Math.floor(this.player.y / TILE_SIZE);
+
+        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126
+        // tile.index = GID, so check directly
+        const SITTABLE_GIDS = [28, 27, 36, 125, 126];
+        const candidates = [];
+
+        // Range ±2 to compensate for collision stopping player before adjacent tile
+        for (let dy = -2; dy <= 2; dy++) {
+            for (let dx = -2; dx <= 2; dx++) {
+                if (dx === 0 && dy === 0) continue;
+                const checkX = tileX + dx;
+                const checkY = tileY + dy;
+                if (this.wallsLayer) {
+                    const tile = this.wallsLayer.getTileAt(checkX, checkY);
+                    if (tile && SITTABLE_GIDS.includes(tile.index)) {
+                        const dist = Math.abs(dx) + Math.abs(dy);
+                        // Bonus: prefer tile in facing direction
+                        const dir = this.playerDirection || 'down';
+                        let facingBonus = 0;
+                        if (dir === 'up' && dy < 0) facingBonus = -0.5;
+                        else if (dir === 'down' && dy > 0) facingBonus = -0.5;
+                        else if (dir === 'left' && dx < 0) facingBonus = -0.5;
+                        else if (dir === 'right' && dx > 0) facingBonus = -0.5;
+
+                        const gid = tile.index;
+                        candidates.push({
+                            tileX: checkX,
+                            tileY: checkY,
+                            gid,
+                            type: gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : 'other',
+                            score: dist + facingBonus
+                        });
+                    }
+                }
+            }
+        }
+
+        // Pick closest (with facing bonus)
+        candidates.sort((a, b) => a.score - b.score);
+        let nearSeat = candidates.length > 0 ? candidates[0] : null;
+
+        // Detect face direction: look for desk/table adjacent to the seat
+        if (nearSeat) {
+            const DESK_GIDS = [23, 24, 121, 122, 123, 124]; // desk, meeting table, desk2x2 parts GIDs
+            let faceDir = this.playerDirection || 'down';
+            const neighbors = [
+                { dx: 0, dy: -1, dir: 'up' },
+                { dx: 0, dy: 1, dir: 'down' },
+                { dx: -1, dy: 0, dir: 'left' },
+                { dx: 1, dy: 0, dir: 'right' }
+            ];
+            for (const n of neighbors) {
+                const adjTile = this.wallsLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy)
+                             || (this.frontLayer && this.frontLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy));
+                if (adjTile && DESK_GIDS.includes(adjTile.index)) {
+                    faceDir = n.dir;
+                    break;
+                }
+            }
+            nearSeat.faceDirection = faceDir;
+        }
+
+        if (nearSeat && !this._lastNearSeat) {
+            eventBus.emit('seat:nearby', nearSeat);
+        } else if (!nearSeat && this._lastNearSeat) {
+            eventBus.emit('seat:away');
+        }
+        this._lastNearSeat = nearSeat;
+    }
+
+    sitDown(seatInfo) {
+        if (this.isSitting) return;
+        this.isSitting = true;
+        this.currentSeat = seatInfo;
+
+        const dir = seatInfo.faceDirection || this.playerDirection || 'down';
+
+        // Target: exact center of the furniture tile
+        const px = seatInfo.tileX * TILE_SIZE + TILE_SIZE / 2;
+        const py = seatInfo.tileY * TILE_SIZE + TILE_SIZE / 2;
+
+        // Stop all movement, disable collision, then teleport via body.reset
+        this.player.setVelocity(0, 0);
+        if (this.player.body) {
+            this.player.body.checkCollision.none = true;
+            this.player.body.reset(px, py);
+        }
+        // Also set sprite position directly to be sure
+        this.player.x = px;
+        this.player.y = py;
+
+        // Squish sprite to look seated
+        this.player.setScale(2, 1.4);
+        this.player.setOffset(6, 42);
+        // Depth between walls layer (0) and furniture_front layer (20)
+        // This makes monitors render IN FRONT of player (Gather.town style)
+        this.player.setDepth(12);
+
+        const animKey = `char_${this.avatarColor}_idle_${dir}`;
+        this.player.anims.play(animKey, true);
+
+        eventBus.emit('seat:sat_down', seatInfo);
+    }
+
+    standUp() {
+        if (!this.isSitting) return;
+        const seat = this.currentSeat;
+        this.isSitting = false;
+        this.currentSeat = null;
+
+        // Restore normal scale, offset, and depth
+        this.player.setScale(2, 2);
+        this.player.setOffset(6, 36);
+        this.player.setDepth(10);
+
+        // Re-enable collision
+        if (this.player.body) {
+            this.player.body.checkCollision.none = false;
+        }
+
+        // Move AWAY from desk to avoid clipping into it
+        const dir = seat?.faceDirection || 'down';
+        if (dir === 'up') this.player.y += TILE_SIZE;
+        else if (dir === 'down') this.player.y -= TILE_SIZE;
+        else if (dir === 'left') this.player.x += TILE_SIZE;
+        else if (dir === 'right') this.player.x -= TILE_SIZE;
+
+        eventBus.emit('seat:stood_up');
+    }
+
+    updateAnimatedTiles(time) {
+        if (!this.groundLayer) return;
+        // Animate water tiles: cycle between water_deep (GID 53) and animation frames (GID 113-116)
+        const WATER_BASE = 53;
+        const WATER_FRAMES = [53, 113, 114, 115];
+        const frame = Math.floor(time / 500) % WATER_FRAMES.length;
+        const targetGID = WATER_FRAMES[frame];
+
+        if (this._lastWaterFrame !== targetGID) {
+            this._lastWaterFrame = targetGID;
+            this.groundLayer.forEachTile(tile => {
+                if (tile.index === WATER_BASE || WATER_FRAMES.includes(tile.index)) {
+                    tile.index = targetGID;
+                }
+            });
+        }
+    }
+
+    hashString(str) {
+        let hash = 0;
+        const s = String(str);
+        for (let i = 0; i < s.length; i++) {
+            const char = s.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash |= 0;
+        }
+        return Math.abs(hash);
+    }
+}
