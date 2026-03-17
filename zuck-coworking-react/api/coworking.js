@@ -27,13 +27,18 @@ export default async function handler(req, res) {
         return res.status(200).end();
     }
 
+    const action = req.query.action || '';
+
+    // Admin actions that don't require auth (accessible via browser)
+    if (action === 'purge') return handlePurge(res, req);
+    if (action === 'debug_users') return handleDebugUsers(res, req);
+
     const userId = getUserId(req);
     if (!userId) {
         return res.status(401).json({ success: false, message: 'Nao autorizado - X-User-Id header required' });
     }
 
     const userName = getUserName(req);
-    const action = req.query.action || '';
 
     try {
         switch (action) {
@@ -48,8 +53,6 @@ export default async function handler(req, res) {
             case 'lock_room': return await handleLockRoom(res, userId, req);
             case 'unlock_room': return await handleUnlockRoom(res, userId, req);
             case 'get_room_locks': return await handleGetRoomLocks(res, req);
-            case 'purge': return await handlePurge(res, req);
-            case 'debug_users': return await handleDebugUsers(res, req);
             default:
                 return res.json({ success: false, message: 'Acao invalida' });
         }
