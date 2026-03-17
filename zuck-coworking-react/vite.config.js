@@ -3,10 +3,10 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
     plugins: [react()],
-    base: '/conta/zuck-coworking/',
+    base: process.env.VERCEL ? '/' : '/conta/zuck-coworking/',
     build: {
-        outDir: '../zuck-coworking',
-        emptyOutDir: false,
+        outDir: process.env.VERCEL ? 'dist' : '../zuck-coworking',
+        emptyOutDir: process.env.VERCEL ? true : false,
         assetsDir: 'assets/build_v1',
         rollupOptions: {
             output: {
