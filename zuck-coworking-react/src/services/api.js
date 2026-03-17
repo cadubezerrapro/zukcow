@@ -1,12 +1,38 @@
 import axios from 'axios';
 
-const API_BASE = '/conta/api/coworking.php';
+const isVercel = !window.location.pathname.startsWith('/conta/');
+const API_BASE = isVercel ? '/api/coworking' : '/conta/api/coworking.php';
+
+// Generate or retrieve a persistent user ID
+function getLocalUserId() {
+    let id = localStorage.getItem('cowork_user_id');
+    if (!id) {
+        id = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('cowork_user_id', id);
+    }
+    return id;
+}
+
+function getLocalUserName() {
+    return localStorage.getItem('cowork_user_name') || 'Usuario';
+}
 
 const api = axios.create({
     baseURL: '',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    withCredentials: true
+    withCredentials: !isVercel
 });
+
+// Add user ID headers for Vercel API
+if (isVercel) {
+    api.interceptors.request.use((config) => {
+        config.headers['X-User-Id'] = getLocalUserId();
+        config.headers['X-User-Name'] = getLocalUserName();
+        return config;
+    });
+}
+
+export { getLocalUserId, getLocalUserName };
 
 function buildParams(obj) {
     const params = new URLSearchParams();

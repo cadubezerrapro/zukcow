@@ -1,10 +1,13 @@
 import eventBus from '../utils/eventBus';
+import { getLocalUserId } from './api';
 
-const SSE_URL = '/conta/api/coworking_stream.php';
+const isVercel = !window.location.pathname.startsWith('/conta/');
+const SSE_URL = isVercel ? '/api/coworking_stream' : '/conta/api/coworking_stream.php';
 
 class SSEService {
     constructor() {
         this.eventSource = null;
+        this.pollInterval = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 10;
         this.reconnectDelay = 1000;
@@ -15,6 +18,52 @@ class SSEService {
         this.spaceId = spaceId;
         this.disconnect();
 
+        if (isVercel) {
+            // Use polling on Vercel (serverless doesn't support SSE well)
+            this.startPolling(spaceId);
+        } else {
+            // Use SSE on Hostinger
+            this.startSSE(spaceId);
+        }
+    }
+
+    startPolling(spaceId) {
+        this.reconnectAttempts = 0;
+        eventBus.emit('sse:connected');
+
+        const poll = async () => {
+            try {
+                const userId = getLocalUserId();
+                const response = await fetch(`${SSE_URL}?space_id=${spaceId}&user_id=${userId}`, {
+                    headers: { 'X-User-Id': userId }
+                });
+                const data = await response.json();
+
+                if (data.type === 'positions') {
+                    eventBus.emit('remote:players_update', data.players, {
+                        room_locks: data.room_locks,
+                        signals: data.signals
+                    });
+                }
+
+                this.reconnectAttempts = 0;
+            } catch (e) {
+                console.warn('Poll error:', e);
+                this.reconnectAttempts++;
+                if (this.reconnectAttempts >= this.maxReconnectAttempts) {
+                    eventBus.emit('sse:max_retries');
+                    this.disconnect();
+                    return;
+                }
+            }
+        };
+
+        // Poll every 300ms for smooth multiplayer
+        poll();
+        this.pollInterval = setInterval(poll, 300);
+    }
+
+    startSSE(spaceId) {
         try {
             this.eventSource = new EventSource(`${SSE_URL}?space_id=${spaceId}`, {
                 withCredentials: true
@@ -61,6 +110,10 @@ class SSEService {
         if (this.eventSource) {
             this.eventSource.close();
             this.eventSource = null;
+        }
+        if (this.pollInterval) {
+            clearInterval(this.pollInterval);
+            this.pollInterval = null;
         }
     }
 
