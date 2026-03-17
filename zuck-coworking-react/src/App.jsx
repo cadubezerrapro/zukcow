@@ -174,6 +174,7 @@ export default function App() {
         joinSpace(spaceId).then((data) => {
             if (data.success && data.data?.users) {
                 setOnlineUsers(data.data.users);
+                setConnected(true); // joinSpace succeeded = backend is reachable
                 eventBus.emit('remote:players_update', data.data.users);
             }
         }).catch(err => console.error('Join error:', err));
@@ -185,6 +186,7 @@ export default function App() {
         }, 15000);
 
         const unsubPlayers = eventBus.on('remote:players_update', (players, extra) => {
+            setConnected(true); // Receiving data = connected
             setOnlineUsers(players);
             // Handle room locks from SSE
             if (extra?.room_locks) setRoomLocks(extra.room_locks);
