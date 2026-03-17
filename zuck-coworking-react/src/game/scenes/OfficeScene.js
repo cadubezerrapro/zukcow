@@ -456,14 +456,20 @@ export class OfficeScene extends Phaser.Scene {
             room: this.currentRoom
         });
 
-        // Emit camera info for React overlays (VideoBubbles)
+        // Emit camera info for React overlays (VideoBubbles, FurnitureEditor)
+        // Use worldView which gives the exact visible world rectangle
         const cam = this.cameras.main;
+        const wv = cam.worldView;
         eventBus.emit('camera:update', {
             scrollX: cam.scrollX,
             scrollY: cam.scrollY,
             zoom: cam.zoom,
             width: cam.width,
-            height: cam.height
+            height: cam.height,
+            worldViewX: wv.x,
+            worldViewY: wv.y,
+            worldViewW: wv.width,
+            worldViewH: wv.height
         });
     }
 

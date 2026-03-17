@@ -11,9 +11,9 @@ const TILE_NAMES = {
 };
 
 function worldToScreen(worldX, worldY, camera) {
-    if (!camera) return { x: -9999, y: -9999 };
-    const x = (worldX - camera.scrollX) * camera.zoom + camera.width / 2;
-    const y = (worldY - camera.scrollY) * camera.zoom + camera.height / 2;
+    if (!camera || !camera.worldViewW) return { x: -9999, y: -9999 };
+    const x = ((worldX - camera.worldViewX) / camera.worldViewW) * camera.width;
+    const y = ((worldY - camera.worldViewY) / camera.worldViewH) * camera.height;
     return { x, y };
 }
 

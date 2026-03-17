@@ -2,9 +2,10 @@ import React, { useRef, useEffect } from 'react';
 import { Mic, MicOff, Video } from 'lucide-react';
 
 function worldToScreen(worldX, worldY, camera) {
-    if (!camera) return { x: -9999, y: -9999 };
-    const x = (worldX - camera.scrollX) * camera.zoom + camera.width / 2;
-    const y = (worldY - camera.scrollY) * camera.zoom + camera.height / 2;
+    if (!camera || !camera.worldViewW) return { x: -9999, y: -9999 };
+    // Use worldView rect: exact visible world area mapped to screen pixels
+    const x = ((worldX - camera.worldViewX) / camera.worldViewW) * camera.width;
+    const y = ((worldY - camera.worldViewY) / camera.worldViewH) * camera.height;
     return { x, y };
 }
 
@@ -24,8 +25,10 @@ function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEna
         return null;
     }
 
-    // Position above the player sprite (sprite is ~48px tall at 2x scale, name label is above that)
-    const bubbleY = y - 80 * cameraInfo.zoom;
+    // Position above the player sprite
+    // The sprite is ~48px tall at 2x scale in world coords; convert to screen px
+    const pxPerWorld = cameraInfo.height / cameraInfo.worldViewH;
+    const bubbleY = y - 80 * pxPerWorld;
 
     if (hasVideo && stream) {
         // Video bubble: small circle with video feed
