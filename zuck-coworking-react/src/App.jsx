@@ -198,8 +198,8 @@ export default function App() {
             }
         });
 
-        const unsubMoved = eventBus.on('player:moved', ({ x, y, direction }) => {
-            updatePosition(x, y, direction, currentRoomRef.current).catch(() => {});
+        const unsubMoved = eventBus.on('player:moved', ({ x, y, direction, is_sitting }) => {
+            updatePosition(x, y, direction, currentRoomRef.current, is_sitting).catch(() => {});
         });
 
         const unsubPos = eventBus.on('player:position', (pos) => {
@@ -526,7 +526,7 @@ export default function App() {
                 currentRoom={currentRoom}
                 currentRoomName={currentRoomName}
                 roomLocked={!!roomLocks[currentRoom]}
-                peersInRoom={currentRoom ? Object.entries(onlineUsers).filter(([id, u]) => String(id) !== String(window.USER_ID || getLocalUserId()) && u.current_room === currentRoom).length : 0}
+                peersInRoom={currentRoom ? Object.entries(onlineUsers).filter(([id, u]) => String(id) !== String(window.USER_ID || getLocalUserId()) && u.current_room === currentRoom).length + 1 : 0}
                 onScreenShare={startScreenShare}
                 onLockRoom={handleLockRoom}
                 onUnlockRoom={handleUnlockRoom}

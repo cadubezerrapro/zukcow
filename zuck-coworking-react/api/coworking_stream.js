@@ -43,7 +43,8 @@ export default async function handler(req, res) {
                 avatar_sprite: user.avatar_sprite,
                 status: user.status || 'available',
                 custom_message: user.custom_message || null,
-                current_room: user.current_room || null
+                current_room: user.current_room || null,
+                is_sitting: user.is_sitting || false
             };
         }
 

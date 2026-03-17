@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { Mic, MicOff } from 'lucide-react';
+import { Mic, MicOff, Video } from 'lucide-react';
 
 function worldToScreen(worldX, worldY, camera) {
     if (!camera) return { x: -9999, y: -9999 };
@@ -8,7 +8,7 @@ function worldToScreen(worldX, worldY, camera) {
     return { x, y };
 }
 
-function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEnabled }) {
+function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEnabled, hasVideo }) {
     const videoRef = useRef(null);
 
     useEffect(() => {
@@ -18,60 +18,105 @@ function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEna
     }, [stream]);
 
     const { x, y } = worldToScreen(worldX, worldY, cameraInfo);
-    const size = isLocal ? 64 : 80;
-    const offsetY = isLocal ? -90 : -100;
 
     // Don't render if off-screen
     if (!cameraInfo || x < -100 || x > cameraInfo.width + 100 || y < -200 || y > cameraInfo.height + 100) {
         return null;
     }
 
+    // Position above the player sprite (sprite is ~48px tall at 2x scale, name label is above that)
+    const bubbleY = y - 80 * cameraInfo.zoom;
+
+    if (hasVideo && stream) {
+        // Video bubble: small circle with video feed
+        const size = 44;
+        return (
+            <div
+                className="absolute pointer-events-none"
+                style={{
+                    left: x - size / 2,
+                    top: bubbleY - size - 8,
+                    transition: 'left 0.1s linear, top 0.1s linear',
+                    zIndex: 20,
+                }}
+            >
+                <div className="flex flex-col items-center">
+                    <div
+                        style={{
+                            width: size,
+                            height: size,
+                            borderRadius: '50%',
+                            overflow: 'hidden',
+                            border: `2px solid ${micEnabled ? '#22c55e' : '#6b7280'}`,
+                            boxShadow: micEnabled
+                                ? '0 0 8px rgba(34,197,94,0.4), 0 2px 8px rgba(0,0,0,0.3)'
+                                : '0 2px 8px rgba(0,0,0,0.3)',
+                        }}
+                    >
+                        <video
+                            ref={videoRef}
+                            autoPlay
+                            playsInline
+                            muted={isLocal}
+                            style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                transform: 'scaleX(-1)',
+                            }}
+                        />
+                    </div>
+                    {/* Mic indicator pill below video */}
+                    <div style={{
+                        marginTop: 2,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 2,
+                        background: micEnabled ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
+                        borderRadius: 8,
+                        padding: '1px 5px',
+                        backdropFilter: 'blur(4px)',
+                    }}>
+                        {micEnabled
+                            ? <Mic size={8} color="#fff" />
+                            : <MicOff size={8} color="#fff" />
+                        }
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Mic-only indicator: small elegant pill
     return (
         <div
             className="absolute pointer-events-none"
             style={{
-                left: x - size / 2,
-                top: y + offsetY - size,
+                left: x - 12,
+                top: bubbleY - 28,
                 transition: 'left 0.1s linear, top 0.1s linear',
                 zIndex: 20,
             }}
         >
-            <div className="flex flex-col items-center">
-                {/* Video circle */}
-                <div
-                    className="relative rounded-full overflow-hidden border-2 shadow-lg"
-                    style={{
-                        width: size,
-                        height: size,
-                        borderColor: micEnabled ? '#22c55e' : '#6b7280',
-                    }}
-                >
-                    <video
-                        ref={videoRef}
-                        autoPlay
-                        playsInline
-                        muted={isLocal}
-                        className="w-full h-full object-cover"
-                        style={{ transform: 'scaleX(-1)' }}
-                    />
-                    {/* Mic indicator */}
-                    <div className="absolute bottom-0 right-0 p-0.5">
-                        <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                            micEnabled ? 'bg-emerald-500' : 'bg-red-500'
-                        }`}>
-                            {micEnabled
-                                ? <Mic size={10} className="text-white" />
-                                : <MicOff size={10} className="text-white" />
-                            }
-                        </div>
-                    </div>
-                </div>
-                {/* Name label */}
-                {!isLocal && (
-                    <div className="mt-1 bg-black/70 rounded px-2 py-0.5">
-                        <span className="text-white text-[10px] font-medium">{name}</span>
-                    </div>
-                )}
+            <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: 24,
+                height: 24,
+                borderRadius: '50%',
+                background: micEnabled
+                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                    : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                boxShadow: micEnabled
+                    ? '0 0 10px rgba(34,197,94,0.5), 0 2px 6px rgba(0,0,0,0.3)'
+                    : '0 2px 6px rgba(0,0,0,0.3)',
+                border: '2px solid rgba(255,255,255,0.3)',
+            }}>
+                {micEnabled
+                    ? <Mic size={11} color="#fff" />
+                    : <MicOff size={11} color="#fff" />
+                }
             </div>
         </div>
     );
@@ -89,10 +134,13 @@ export default function VideoBubbles({
 }) {
     if (!cameraInfo) return null;
 
+    const hasLocalVideo = camEnabled && localStream && localStream.getVideoTracks().length > 0;
+    const hasLocalMic = micEnabled && localStream;
+
     return (
         <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 15 }}>
-            {/* Local player video bubble */}
-            {camEnabled && localStream && playerPos && (
+            {/* Local player bubble - show if mic or cam enabled */}
+            {(hasLocalVideo || hasLocalMic) && playerPos && (
                 <VideoBubble
                     stream={localStream}
                     name="Voce"
@@ -101,15 +149,17 @@ export default function VideoBubbles({
                     cameraInfo={cameraInfo}
                     isLocal={true}
                     micEnabled={micEnabled}
+                    hasVideo={hasLocalVideo}
                 />
             )}
 
-            {/* Remote player video bubbles */}
+            {/* Remote player video/mic bubbles */}
             {Object.entries(remoteStreams).map(([peerId, stream]) => {
                 const user = onlineUsers[peerId];
                 if (!user) return null;
-                // Only show if in same room
                 if (currentRoom && user.current_room !== currentRoom) return null;
+
+                const hasVideo = stream.getVideoTracks && stream.getVideoTracks().length > 0;
 
                 return (
                     <VideoBubble
@@ -121,6 +171,7 @@ export default function VideoBubbles({
                         cameraInfo={cameraInfo}
                         isLocal={false}
                         micEnabled={true}
+                        hasVideo={hasVideo}
                     />
                 );
             })}

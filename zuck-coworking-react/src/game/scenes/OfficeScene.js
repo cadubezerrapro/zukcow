@@ -526,14 +526,15 @@ export class OfficeScene extends Phaser.Scene {
         const y = Math.round(this.player.y);
         const dir = this.playerDirection;
 
-        if (x === this.lastSentPosition.x && y === this.lastSentPosition.y && dir === this.lastSentPosition.direction) {
+        const sitting = this.isSitting;
+        if (x === this.lastSentPosition.x && y === this.lastSentPosition.y && dir === this.lastSentPosition.direction && sitting === this.lastSentPosition.is_sitting) {
             return;
         }
 
-        this.lastSentPosition = { x, y, direction: dir };
+        this.lastSentPosition = { x, y, direction: dir, is_sitting: sitting };
         this.lastSendTime = time;
 
-        eventBus.emit('player:moved', { x, y, direction: dir });
+        eventBus.emit('player:moved', { x, y, direction: dir, is_sitting: this.isSitting });
     }
 
     // --- Remote Players ---
@@ -549,6 +550,7 @@ export class OfficeScene extends Phaser.Scene {
                 this.remotePlayers[id].targetX = data.x;
                 this.remotePlayers[id].targetY = data.y;
                 this.remotePlayers[id].targetDirection = data.direction || 'down';
+                this.remotePlayers[id].isSitting = !!data.is_sitting;
                 // Update name if changed
                 if (data.name && this.remotePlayers[id].nameLabel) {
                     this.remotePlayers[id].nameLabel.setText(`\u25CF ${data.name}`);
@@ -607,6 +609,7 @@ export class OfficeScene extends Phaser.Scene {
             targetY: data.y,
             targetDirection: data.direction || 'down',
             currentDirection: data.direction || 'down',
+            isSitting: !!data.is_sitting,
             lastInterpTime: 0
         };
     }
@@ -630,36 +633,54 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            if (dist > 2) {
-                // Teleport threshold: if very far (room change, etc), snap instantly
-                if (dist > 500) {
-                    rp.sprite.x = rp.targetX;
-                    rp.sprite.y = rp.targetY;
-                } else {
-                    // Move at constant speed toward target (matches real player speed)
-                    const moveSpeed = PLAYER_SPEED * 1.2; // slightly faster to catch up
-                    const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
-                    const maxMove = moveSpeed * Math.min(dt, 0.05); // cap dt to avoid huge jumps
-
-                    if (dist <= maxMove) {
-                        rp.sprite.x = rp.targetX;
-                        rp.sprite.y = rp.targetY;
-                    } else {
-                        const ratio = maxMove / dist;
-                        rp.sprite.x += dx * ratio;
-                        rp.sprite.y += dy * ratio;
-                    }
-                }
-
-                // Walking animation
-                const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
-                rp.sprite.anims.play(animKey, true);
-            } else {
+            // Apply sitting visual transforms
+            if (rp.isSitting) {
+                // Snap to seated position
                 rp.sprite.x = rp.targetX;
                 rp.sprite.y = rp.targetY;
+                rp.sprite.setScale(2, 1.4);
+                rp.sprite.setDepth(12);
 
                 const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
                 rp.sprite.anims.play(idleKey, true);
+            } else {
+                // Restore standing scale if was sitting
+                if (rp.sprite.scaleY !== 2) {
+                    rp.sprite.setScale(2, 2);
+                    rp.sprite.setDepth(10);
+                }
+
+                if (dist > 2) {
+                    // Teleport threshold: if very far (room change, etc), snap instantly
+                    if (dist > 500) {
+                        rp.sprite.x = rp.targetX;
+                        rp.sprite.y = rp.targetY;
+                    } else {
+                        // Move at constant speed toward target (matches real player speed)
+                        const moveSpeed = PLAYER_SPEED * 1.2; // slightly faster to catch up
+                        const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
+                        const maxMove = moveSpeed * Math.min(dt, 0.05); // cap dt to avoid huge jumps
+
+                        if (dist <= maxMove) {
+                            rp.sprite.x = rp.targetX;
+                            rp.sprite.y = rp.targetY;
+                        } else {
+                            const ratio = maxMove / dist;
+                            rp.sprite.x += dx * ratio;
+                            rp.sprite.y += dy * ratio;
+                        }
+                    }
+
+                    // Walking animation
+                    const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
+                    rp.sprite.anims.play(animKey, true);
+                } else {
+                    rp.sprite.x = rp.targetX;
+                    rp.sprite.y = rp.targetY;
+
+                    const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
+                    rp.sprite.anims.play(idleKey, true);
+                }
             }
 
             rp.lastInterpTime = now;
@@ -810,6 +831,10 @@ export class OfficeScene extends Phaser.Scene {
         this.player.anims.play(animKey, true);
 
         eventBus.emit('seat:sat_down', seatInfo);
+
+        // Force send sitting position immediately
+        this.lastSentPosition = {};
+        this.lastSendTime = 0;
     }
 
     standUp() {
@@ -836,6 +861,10 @@ export class OfficeScene extends Phaser.Scene {
         else if (dir === 'right') this.player.x -= TILE_SIZE;
 
         eventBus.emit('seat:stood_up');
+
+        // Force send standing position immediately
+        this.lastSentPosition = {};
+        this.lastSendTime = 0;
     }
 
     updateAnimatedTiles(time) {
