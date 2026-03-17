@@ -1,15 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { Mic, MicOff, Video } from 'lucide-react';
+import { Mic, MicOff, VideoOff } from 'lucide-react';
 
-function worldToScreen(worldX, worldY, camera) {
-    if (!camera || !camera.worldViewW) return { x: -9999, y: -9999 };
-    // Use worldView rect: exact visible world area mapped to screen pixels
-    const x = ((worldX - camera.worldViewX) / camera.worldViewW) * camera.width;
-    const y = ((worldY - camera.worldViewY) / camera.worldViewH) * camera.height;
-    return { x, y };
-}
-
-function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEnabled, hasVideo }) {
+function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
     const videoRef = useRef(null);
 
     useEffect(() => {
@@ -18,109 +10,111 @@ function VideoBubble({ stream, name, worldX, worldY, cameraInfo, isLocal, micEna
         }
     }, [stream]);
 
-    const { x, y } = worldToScreen(worldX, worldY, cameraInfo);
-
-    // Don't render if off-screen
-    if (!cameraInfo || x < -100 || x > cameraInfo.width + 100 || y < -200 || y > cameraInfo.height + 100) {
-        return null;
-    }
-
-    // Position above the player sprite
-    // The sprite is ~48px tall at 2x scale in world coords; convert to screen px
-    const pxPerWorld = cameraInfo.height / cameraInfo.worldViewH;
-    const bubbleY = y - 80 * pxPerWorld;
-
-    if (hasVideo && stream) {
-        // Video bubble: small circle with video feed
-        const size = 44;
-        return (
-            <div
-                className="absolute pointer-events-none"
-                style={{
-                    left: x - size / 2,
-                    top: bubbleY - size - 8,
-                    transition: 'left 0.1s linear, top 0.1s linear',
-                    zIndex: 20,
-                }}
-            >
-                <div className="flex flex-col items-center">
-                    <div
-                        style={{
-                            width: size,
-                            height: size,
-                            borderRadius: '50%',
-                            overflow: 'hidden',
-                            border: `2px solid ${micEnabled ? '#22c55e' : '#6b7280'}`,
-                            boxShadow: micEnabled
-                                ? '0 0 8px rgba(34,197,94,0.4), 0 2px 8px rgba(0,0,0,0.3)'
-                                : '0 2px 8px rgba(0,0,0,0.3)',
-                        }}
-                    >
-                        <video
-                            ref={videoRef}
-                            autoPlay
-                            playsInline
-                            muted={isLocal}
-                            style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                transform: 'scaleX(-1)',
-                            }}
-                        />
-                    </div>
-                    {/* Mic indicator pill below video */}
-                    <div style={{
-                        marginTop: 2,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 2,
-                        background: micEnabled ? 'rgba(34,197,94,0.9)' : 'rgba(239,68,68,0.9)',
-                        borderRadius: 8,
-                        padding: '1px 5px',
-                        backdropFilter: 'blur(4px)',
-                    }}>
-                        {micEnabled
-                            ? <Mic size={8} color="#fff" />
-                            : <MicOff size={8} color="#fff" />
-                        }
-                    </div>
-                </div>
-            </div>
-        );
-    }
-
-    // Mic-only indicator: small elegant pill
     return (
-        <div
-            className="absolute pointer-events-none"
-            style={{
-                left: x - 12,
-                top: bubbleY - 28,
-                transition: 'left 0.1s linear, top 0.1s linear',
-                zIndex: 20,
-            }}
-        >
+        <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 4,
+        }}>
+            {/* Video / Avatar circle */}
             <div style={{
+                width: 72,
+                height: 72,
+                borderRadius: '50%',
+                overflow: 'hidden',
+                background: hasVideo ? '#000' : 'linear-gradient(135deg, #334155, #1e293b)',
+                border: `3px solid ${micEnabled ? '#22c55e' : '#475569'}`,
+                boxShadow: micEnabled
+                    ? '0 0 12px rgba(34,197,94,0.3), 0 4px 12px rgba(0,0,0,0.4)'
+                    : '0 4px 12px rgba(0,0,0,0.4)',
+                position: 'relative',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: 24,
-                height: 24,
-                borderRadius: '50%',
-                background: micEnabled
-                    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-                    : 'linear-gradient(135deg, #ef4444, #dc2626)',
-                boxShadow: micEnabled
-                    ? '0 0 10px rgba(34,197,94,0.5), 0 2px 6px rgba(0,0,0,0.3)'
-                    : '0 2px 6px rgba(0,0,0,0.3)',
-                border: '2px solid rgba(255,255,255,0.3)',
+                transition: 'border-color 0.2s ease',
             }}>
-                {micEnabled
-                    ? <Mic size={11} color="#fff" />
-                    : <MicOff size={11} color="#fff" />
-                }
+                {hasVideo && stream ? (
+                    <video
+                        ref={videoRef}
+                        autoPlay
+                        playsInline
+                        muted={isLocal}
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            transform: 'scaleX(-1)',
+                        }}
+                    />
+                ) : (
+                    <span style={{
+                        fontSize: 28,
+                        fontWeight: 700,
+                        color: '#94a3b8',
+                        textTransform: 'uppercase',
+                        userSelect: 'none',
+                    }}>
+                        {(name || '?')[0]}
+                    </span>
+                )}
+
+                {/* Mic indicator badge */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    right: 0,
+                    width: 22,
+                    height: 22,
+                    borderRadius: '50%',
+                    background: micEnabled
+                        ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+                        : 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    border: '2px solid #1e293b',
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                }}>
+                    {micEnabled
+                        ? <Mic size={10} color="#fff" />
+                        : <MicOff size={10} color="#fff" />
+                    }
+                </div>
+
+                {/* No video badge */}
+                {!hasVideo && (
+                    <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        right: 0,
+                        width: 20,
+                        height: 20,
+                        borderRadius: '50%',
+                        background: '#475569',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        border: '2px solid #1e293b',
+                    }}>
+                        <VideoOff size={9} color="#94a3b8" />
+                    </div>
+                )}
             </div>
+
+            {/* Name */}
+            <span style={{
+                color: '#e2e8f0',
+                fontSize: 11,
+                fontWeight: 600,
+                maxWidth: 80,
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                textAlign: 'center',
+            }}>
+                {isLocal ? 'Voce' : name}
+            </span>
         </div>
     );
 }
@@ -133,51 +127,69 @@ export default function VideoBubbles({
     micEnabled,
     playerPos,
     cameraInfo,
-    currentRoom
+    currentRoom,
+    displayName
 }) {
-    if (!cameraInfo) return null;
+    // Only show when in a room
+    if (!currentRoom) return null;
 
-    const hasLocalVideo = camEnabled && localStream && localStream.getVideoTracks().length > 0;
-    const hasLocalMic = micEnabled && localStream;
+    // Collect participants in the same room
+    const myId = String(window.USER_ID || localStorage.getItem('cowork_user_id') || '');
+    const roomPeers = Object.entries(onlineUsers).filter(
+        ([id, u]) => String(id) !== myId && u.current_room === currentRoom
+    );
+
+    // Don't show bar if alone in room and no media active
+    const hasLocalMedia = localStream && (camEnabled || micEnabled);
+    const hasRemoteStreams = roomPeers.some(([id]) => remoteStreams[id]);
+    if (!hasLocalMedia && !hasRemoteStreams && roomPeers.length === 0) return null;
 
     return (
-        <div className="absolute inset-0 pointer-events-none overflow-hidden" style={{ zIndex: 15 }}>
-            {/* Local player bubble - show if mic or cam enabled */}
-            {(hasLocalVideo || hasLocalMic) && playerPos && (
-                <VideoBubble
+        <div style={{
+            position: 'absolute',
+            top: 60,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            zIndex: 25,
+            pointerEvents: 'none',
+        }}>
+            <div style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 16,
+                background: 'rgba(15, 23, 42, 0.85)',
+                backdropFilter: 'blur(12px)',
+                borderRadius: 16,
+                padding: '12px 20px 10px',
+                border: '1px solid rgba(71, 85, 105, 0.4)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)',
+            }}>
+                {/* Local user */}
+                <VideoTile
                     stream={localStream}
-                    name="Voce"
-                    worldX={playerPos.x}
-                    worldY={playerPos.y}
-                    cameraInfo={cameraInfo}
+                    name={displayName || 'Voce'}
                     isLocal={true}
                     micEnabled={micEnabled}
-                    hasVideo={hasLocalVideo}
+                    hasVideo={camEnabled && localStream && localStream.getVideoTracks().length > 0}
                 />
-            )}
 
-            {/* Remote player video/mic bubbles */}
-            {Object.entries(remoteStreams).map(([peerId, stream]) => {
-                const user = onlineUsers[peerId];
-                if (!user) return null;
-                if (currentRoom && user.current_room !== currentRoom) return null;
+                {/* Remote users in same room */}
+                {roomPeers.map(([peerId, user]) => {
+                    const stream = remoteStreams[peerId];
+                    const hasVideo = stream?.getVideoTracks?.().length > 0;
 
-                const hasVideo = stream.getVideoTracks && stream.getVideoTracks().length > 0;
-
-                return (
-                    <VideoBubble
-                        key={peerId}
-                        stream={stream}
-                        name={user.name || `User ${peerId}`}
-                        worldX={user.x}
-                        worldY={user.y}
-                        cameraInfo={cameraInfo}
-                        isLocal={false}
-                        micEnabled={true}
-                        hasVideo={hasVideo}
-                    />
-                );
-            })}
+                    return (
+                        <VideoTile
+                            key={peerId}
+                            stream={stream || null}
+                            name={user.name || `User ${peerId}`}
+                            isLocal={false}
+                            micEnabled={!!stream}
+                            hasVideo={!!hasVideo}
+                        />
+                    );
+                })}
+            </div>
         </div>
     );
 }

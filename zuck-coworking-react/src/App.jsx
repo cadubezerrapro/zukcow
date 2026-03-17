@@ -553,6 +553,7 @@ export default function App() {
                 playerPos={playerPos}
                 cameraInfo={cameraInfo}
                 currentRoom={currentRoom}
+                displayName={displayName}
             />
 
             <VideoOverlay
