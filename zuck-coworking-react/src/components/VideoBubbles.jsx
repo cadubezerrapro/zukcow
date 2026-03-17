@@ -16,6 +16,7 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
             flexDirection: 'column',
             alignItems: 'center',
             gap: 4,
+            minWidth: 72,
         }}>
             {/* Video / Avatar circle */}
             <div style={{
@@ -62,8 +63,8 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                 {/* Mic indicator badge */}
                 <div style={{
                     position: 'absolute',
-                    bottom: 0,
-                    right: 0,
+                    bottom: -2,
+                    right: -2,
                     width: 22,
                     height: 22,
                     borderRadius: '50%',
@@ -73,7 +74,7 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    border: '2px solid #1e293b',
+                    border: '2px solid #0f172a',
                     boxShadow: '0 2px 4px rgba(0,0,0,0.3)',
                 }}>
                     {micEnabled
@@ -86,8 +87,8 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                 {!hasVideo && (
                     <div style={{
                         position: 'absolute',
-                        top: 0,
-                        right: 0,
+                        top: -2,
+                        right: -2,
                         width: 20,
                         height: 20,
                         borderRadius: '50%',
@@ -95,7 +96,7 @@ function VideoTile({ stream, name, isLocal, micEnabled, hasVideo }) {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        border: '2px solid #1e293b',
+                        border: '2px solid #0f172a',
                     }}>
                         <VideoOff size={9} color="#94a3b8" />
                     </div>
@@ -125,70 +126,89 @@ export default function VideoBubbles({
     localStream,
     camEnabled,
     micEnabled,
-    playerPos,
-    cameraInfo,
     currentRoom,
     displayName
 }) {
-    // Only show when in a room
-    if (!currentRoom) return null;
+    // Determine if we have any local media active
+    const hasLocalMedia = !!(localStream && (camEnabled || micEnabled));
 
-    // Collect participants in the same room
+    // Collect peers in same room (if in a room)
     const myId = String(window.USER_ID || localStorage.getItem('cowork_user_id') || '');
-    const roomPeers = Object.entries(onlineUsers).filter(
-        ([id, u]) => String(id) !== myId && u.current_room === currentRoom
-    );
+    const roomPeers = currentRoom
+        ? Object.entries(onlineUsers).filter(
+            ([id, u]) => String(id) !== myId && u.current_room === currentRoom
+        )
+        : [];
 
-    // Don't show bar if alone in room and no media active
-    const hasLocalMedia = localStream && (camEnabled || micEnabled);
-    const hasRemoteStreams = roomPeers.some(([id]) => remoteStreams[id]);
+    // Check if any remote streams exist
+    const hasRemoteStreams = Object.keys(remoteStreams).length > 0;
+
+    // Show bar if: mic/cam is active OR there are remote streams OR peers in same room
     if (!hasLocalMedia && !hasRemoteStreams && roomPeers.length === 0) return null;
 
     return (
         <div style={{
-            position: 'absolute',
-            top: 60,
+            position: 'fixed',
+            top: 12,
             left: '50%',
             transform: 'translateX(-50%)',
-            zIndex: 25,
+            zIndex: 50,
             pointerEvents: 'none',
         }}>
             <div style={{
                 display: 'flex',
                 alignItems: 'flex-start',
                 gap: 16,
-                background: 'rgba(15, 23, 42, 0.85)',
-                backdropFilter: 'blur(12px)',
+                background: 'rgba(15, 23, 42, 0.9)',
+                backdropFilter: 'blur(16px)',
+                WebkitBackdropFilter: 'blur(16px)',
                 borderRadius: 16,
-                padding: '12px 20px 10px',
-                border: '1px solid rgba(71, 85, 105, 0.4)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.2)',
+                padding: '14px 22px 10px',
+                border: '1px solid rgba(71, 85, 105, 0.5)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.05)',
             }}>
-                {/* Local user */}
-                <VideoTile
-                    stream={localStream}
-                    name={displayName || 'Voce'}
-                    isLocal={true}
-                    micEnabled={micEnabled}
-                    hasVideo={camEnabled && localStream && localStream.getVideoTracks().length > 0}
-                />
+                {/* Local user tile - always show when media is active */}
+                {hasLocalMedia && (
+                    <VideoTile
+                        stream={localStream}
+                        name={displayName || 'Voce'}
+                        isLocal={true}
+                        micEnabled={micEnabled}
+                        hasVideo={!!(camEnabled && localStream && localStream.getVideoTracks().length > 0)}
+                    />
+                )}
 
-                {/* Remote users in same room */}
-                {roomPeers.map(([peerId, user]) => {
-                    const stream = remoteStreams[peerId];
+                {/* Remote users with streams */}
+                {Object.entries(remoteStreams).map(([peerId, stream]) => {
+                    const user = onlineUsers[peerId];
                     const hasVideo = stream?.getVideoTracks?.().length > 0;
 
                     return (
                         <VideoTile
                             key={peerId}
-                            stream={stream || null}
-                            name={user.name || `User ${peerId}`}
+                            stream={stream}
+                            name={user?.name || `User ${peerId}`}
                             isLocal={false}
                             micEnabled={!!stream}
                             hasVideo={!!hasVideo}
                         />
                     );
                 })}
+
+                {/* Room peers without streams (show avatar placeholder) */}
+                {roomPeers
+                    .filter(([id]) => !remoteStreams[id])
+                    .map(([peerId, user]) => (
+                        <VideoTile
+                            key={peerId}
+                            stream={null}
+                            name={user.name || `User ${peerId}`}
+                            isLocal={false}
+                            micEnabled={false}
+                            hasVideo={false}
+                        />
+                    ))
+                }
             </div>
         </div>
     );

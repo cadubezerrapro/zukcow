@@ -568,7 +568,8 @@ export class OfficeScene extends Phaser.Scene {
                     y: data.y,
                     direction: data.direction || 'down',
                     name: data.name || `User ${id}`,
-                    avatar_sprite: data.avatar_sprite || 'default'
+                    avatar_sprite: data.avatar_sprite || 'default',
+                    is_sitting: !!data.is_sitting
                 });
             }
         });
