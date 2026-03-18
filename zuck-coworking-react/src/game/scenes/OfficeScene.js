@@ -1279,10 +1279,10 @@ export class OfficeScene extends Phaser.Scene {
                 let sx = this.player.x;
                 let sy = this.player.y;
                 // Position exhaust behind the kart (opposite of movement direction)
-                if (dir === 'down') sy += 42;
-                else if (dir === 'up') sy -= 42;
-                else if (dir === 'right') sx += 42;
-                else if (dir === 'left') sx -= 42;
+                if (dir === 'up') sy += 42;
+                else if (dir === 'down') sy -= 42;
+                else if (dir === 'left') sx += 42;
+                else if (dir === 'right') sx -= 42;
                 sx += (Math.random() - 0.5) * 20;
                 sy += (Math.random() - 0.5) * 20;
                 const size = 6 + Math.random() * 6;
