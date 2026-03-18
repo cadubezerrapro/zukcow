@@ -2913,76 +2913,77 @@ export class BootScene extends Phaser.Scene {
     // WATER / LAKE TILES (IDs 52-63)
     // ==========================================
 
-    _drawWaterBase(ctx, x, y, T, color = '#2678a0') {
-        // Base fill
-        ctx.fillStyle = color;
+    _drawWaterFrame(ctx, x, y, T, frame = 0) {
+        // Base fill — always same color
+        ctx.fillStyle = '#2678a0';
         ctx.fillRect(x, y, T, T);
 
-        // Darker depth variation (subtle horizontal bands)
-        ctx.fillStyle = 'rgba(0,20,40,0.08)';
-        ctx.fillRect(x, y + 6, T, 3);
-        ctx.fillRect(x, y + 18, T, 3);
-        ctx.fillRect(x, y + 28, T, 2);
+        // STATIC elements (same in all frames — matches edge tiles)
+        // Dark depth bands
+        ctx.fillStyle = '#1e6a90';
+        ctx.fillRect(x, y + 5, T, 2);
+        ctx.fillRect(x, y + 16, T, 2);
+        ctx.fillRect(x, y + 27, T, 2);
 
-        // Lighter ripple bands
-        ctx.fillStyle = 'rgba(80,180,230,0.12)';
-        ctx.fillRect(x, y + 2, T, 2);
-        ctx.fillRect(x, y + 13, T, 2);
-        ctx.fillRect(x, y + 24, T, 2);
+        // Light wave crests
+        ctx.fillStyle = '#3a9cc8';
+        ctx.fillRect(x, y + 1, T, 1);
+        ctx.fillRect(x, y + 12, T, 1);
+        ctx.fillRect(x, y + 23, T, 1);
 
-        // Wavy highlight lines (sinusoidal)
-        ctx.fillStyle = 'rgba(255,255,255,0.10)';
-        for (let wy = 4; wy < T; wy += 8) {
+        // Bright foam lines
+        ctx.fillStyle = '#5bb8e0';
+        ctx.fillRect(x, y + 2, T, 1);
+        ctx.fillRect(x, y + 13, T, 1);
+        ctx.fillRect(x, y + 24, T, 1);
+
+        // ANIMATED elements (shift with frame — only subtle highlights)
+        // Wavy sinusoidal sparkle line (phase shifts per frame)
+        ctx.fillStyle = '#4daad0';
+        for (let wy = 8; wy < T; wy += 11) {
             for (let wx = 0; wx < T; wx++) {
-                const wave = Math.sin(wx * 0.5 + wy) * 1.5;
+                const wave = Math.sin(wx * 0.4 + frame * 1.5) * 1.5;
                 const py = Math.round(wy + wave);
                 if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
             }
         }
 
-        // Secondary wave lines (offset, different frequency)
-        ctx.fillStyle = 'rgba(60,160,210,0.10)';
-        for (let wy = 8; wy < T; wy += 8) {
-            for (let wx = 0; wx < T; wx++) {
-                const wave = Math.cos(wx * 0.4 + wy * 0.7) * 1.2;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
-            }
+        // Moving sparkles (sun reflections shifting)
+        ctx.fillStyle = '#b0e8ff';
+        const sparkles = [[5,3],[18,9],[28,6],[10,20],[24,26],[2,14],[14,29],[30,17]];
+        for (const [sx, sy] of sparkles) {
+            const nx = (sx + frame * 3) % T;
+            ctx.fillRect(x + nx, y + sy, 2, 1);
         }
+        ctx.fillStyle = '#d4f2ff';
+        ctx.fillRect(x + ((6 + frame * 3) % T), y + 3, 1, 1);
+        ctx.fillRect(x + ((19 + frame * 3) % T), y + 9, 1, 1);
+        ctx.fillRect(x + ((11 + frame * 3) % T), y + 20, 1, 1);
+    }
 
-        // Sparkle highlights (scattered bright dots)
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillRect(x + 5, y + 3, 1, 1);
-        ctx.fillRect(x + 19, y + 11, 1, 1);
-        ctx.fillRect(x + 27, y + 7, 1, 1);
-        ctx.fillRect(x + 11, y + 22, 1, 1);
-        ctx.fillRect(x + 24, y + 27, 1, 1);
-        ctx.fillRect(x + 3, y + 15, 1, 1);
-        ctx.fillRect(x + 15, y + 30, 1, 1);
-        ctx.fillRect(x + 29, y + 19, 1, 1);
-
-        // Larger shimmer patches
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.fillRect(x + 4, y + 9, 3, 1);
-        ctx.fillRect(x + 16, y + 5, 4, 1);
-        ctx.fillRect(x + 22, y + 16, 3, 1);
-        ctx.fillRect(x + 8, y + 26, 4, 1);
-        ctx.fillRect(x + 26, y + 1, 3, 1);
-
-        // Deep shadow pockets
-        ctx.fillStyle = 'rgba(0,30,60,0.06)';
-        ctx.fillRect(x + 10, y + 10, 2, 2);
-        ctx.fillRect(x + 22, y + 22, 2, 2);
-        ctx.fillRect(x + 2, y + 20, 2, 2);
-        ctx.fillRect(x + 28, y + 12, 2, 2);
+    _drawWaterBase(ctx, x, y, T, color) {
+        // Default frame (frame 0) for edge/corner tiles
+        if (color && color !== '#2678a0') {
+            // Custom color for aquarium etc
+            ctx.fillStyle = color;
+            ctx.fillRect(x, y, T, T);
+            ctx.fillStyle = 'rgba(255,255,255,0.04)';
+            for (let wy = 3; wy < T; wy += 7) {
+                for (let wx = 0; wx < T; wx += 2) {
+                    ctx.fillRect(x + wx, y + wy, 2, 1);
+                }
+            }
+            return;
+        }
+        this._drawWaterFrame(ctx, x, y, T, 0);
     }
 
     drawWaterDeep(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 0);
     }
 
     drawWaterShallow(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 0);
     }
 
     drawWaterEdgeTop(ctx, x, y, T) {
@@ -4885,19 +4886,19 @@ export class BootScene extends Phaser.Scene {
     // ==========================================
 
     drawWaterFrame0(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 0);
     }
 
     drawWaterFrame1(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 1);
     }
 
     drawWaterFrame2(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 2);
     }
 
     drawWaterFrame3(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T);
+        this._drawWaterFrame(ctx, x, y, T, 3);
     }
 
     drawAquariumFrame1(ctx, x, y, T) {
