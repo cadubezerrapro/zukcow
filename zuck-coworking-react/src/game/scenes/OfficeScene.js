@@ -631,6 +631,12 @@ export class OfficeScene extends Phaser.Scene {
     update(time) {
         if (!this.player) return;
 
+        // Restore real Y from previous frame's jump offset
+        if (this._jumpApplied) {
+            this.player.y -= this._jumpApplied;
+            this._jumpApplied = 0;
+        }
+
         this.handleMovement();
         this.updateNameLabel();
         this.detectRoom();
@@ -646,7 +652,7 @@ export class OfficeScene extends Phaser.Scene {
             room: this.currentRoom
         });
 
-        // Visual jump: create shadow at feet and shift sprite rendering
+        // Visual jump: move sprite up + show shadow at real feet position
         if (this.jumpOffset) {
             if (!this.jumpShadow) {
                 this.jumpShadow = this.add.ellipse(0, 0, 24, 8, 0x000000, 0.3);
@@ -654,13 +660,13 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.jumpShadow.setPosition(this.player.x, this.player.y + 20);
             this.jumpShadow.setVisible(true);
-            // Offset the body so sprite renders higher but hitbox stays
-            this.player.body.offset.y = 36 - this.jumpOffset;
+            // Apply visual offset (negative = up)
+            this.player.y += this.jumpOffset;
+            this._jumpApplied = this.jumpOffset;
+            // Move name label with jump
+            this.playerNameLabel.y += this.jumpOffset;
         } else if (this.jumpShadow) {
             this.jumpShadow.setVisible(false);
-            if (this.player.body && !this.isSitting) {
-                this.player.body.offset.y = 36;
-            }
         }
 
         // Emit camera info for React overlays (VideoBubbles, FurnitureEditor)
@@ -737,8 +743,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     updateNameLabel() {
-        const jOff = this.jumpOffset || 0;
-        this.playerNameLabel.setPosition(this.player.x, this.player.y + jOff - 56);
+        this.playerNameLabel.setPosition(this.player.x, this.player.y - 56);
         // Position green dot overlay on top of the "●" character inside the label
         const labelLeft = this.playerNameLabel.x - this.playerNameLabel.width * this.playerNameLabel.originX;
         const dotX = labelLeft + 12; // aligned with the ● char (padding 8 + ~4 center of char)
