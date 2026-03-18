@@ -1197,43 +1197,33 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWallInner(ctx, x, y, T) {
-        // Inner wall with molding, baseboard, and vertical line texture
-        // Base color
-        ctx.fillStyle = '#4a5568';
+        // Modern clean inner wall - smooth light surface with crown molding and baseboard
+        // Base wall color - warm light gray
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Lighter top strip (molding) - 3px
-        ctx.fillStyle = '#6a7588';
+        // Subtle texture variation
+        ctx.fillStyle = 'rgba(0,0,0,0.02)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(x + (i * 7 + 3) % T, y + 4 + (i * 9) % (T - 8), 3, 2);
+        }
+        // Crown molding at top - 3px
+        ctx.fillStyle = '#d0c8c0';
         ctx.fillRect(x, y, T, 3);
-        // Top edge highlight
-        ctx.fillStyle = '#7a85a0';
+        ctx.fillStyle = '#ddd6ce';
         ctx.fillRect(x, y, T, 1);
-        // Molding shadow line
-        ctx.fillStyle = 'rgba(0,0,0,0.1)';
+        // Shadow below crown
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
         ctx.fillRect(x, y + 3, T, 1);
-        // Vertical line texture every 8px on main wall body
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        for (let vx = 0; vx < T; vx += 8) {
-            ctx.fillRect(x + vx, y + 4, 1, T - 7);
-        }
-        // Subtle horizontal texture bands
-        ctx.fillStyle = 'rgba(255,255,255,0.03)';
-        for (let vy = 8; vy < T - 4; vy += 6) {
-            ctx.fillRect(x, y + vy, T, 1);
-        }
-        // Wall surface variation
-        ctx.fillStyle = 'rgba(0,0,0,0.03)';
-        for (let i = 0; i < 10; i++) {
-            ctx.fillRect(x + (i * 7 + 3) % T, y + 4 + (i * 11 + 2) % (T - 8), 2, 1);
-        }
-        // Baseboard at bottom - 3px
-        ctx.fillStyle = '#3a4558';
+        // Baseboard at bottom - wood tone, 3px
+        ctx.fillStyle = '#8b7355';
         ctx.fillRect(x, y + T - 3, T, 3);
-        // Baseboard top edge highlight
-        ctx.fillStyle = '#4a5568';
+        ctx.fillStyle = '#9a8265';
         ctx.fillRect(x, y + T - 3, T, 1);
-        // Baseboard bottom shadow
-        ctx.fillStyle = '#2a3240';
+        ctx.fillStyle = '#7a6345';
         ctx.fillRect(x, y + T - 1, T, 1);
+        // Shadow above baseboard
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(x, y + T - 4, T, 1);
     }
 
     drawPartition(ctx, x, y, T) {
@@ -2570,383 +2560,356 @@ export class BootScene extends Phaser.Scene {
     // ==========================================
 
     drawWallTop(ctx, x, y, T) {
-        // Horizontal top wall with 3D treatment, bricks, shadow at bottom
-        // Front face (main body)
-        ctx.fillStyle = '#3a4556';
+        // Modern clean horizontal top wall
+        // Main wall surface - light warm gray
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Top face (light gray, 3px)
-        ctx.fillStyle = '#6a7a8a';
-        ctx.fillRect(x, y, T, 3);
-        ctx.fillStyle = '#7a8a9a';
-        ctx.fillRect(x, y, T, 1);
-        // Brick pattern overlay on main body
-        for (let row = 0; row < 3; row++) {
-            const by = 4 + row * 8;
-            const offset = (row % 2) * 5;
-            if (by + 6 >= T) break;
-            for (let col = -1; col < 5; col++) {
-                const bx = offset + col * 10;
-                const dX = Math.max(0, bx);
-                const dW = Math.min(bx + 9, T) - dX;
-                if (dW > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, 6);
-                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                    ctx.fillRect(x + dX, y + by, dW, 1);
-                }
-            }
-            // Mortar line
-            ctx.fillStyle = '#2d3748';
-            ctx.fillRect(x, y + by + 6, T, 1);
+        // Subtle texture variation
+        ctx.fillStyle = 'rgba(0,0,0,0.02)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(x + (i * 7 + 2) % T, y + 4 + (i * 9) % (T - 8), 3, 2);
         }
-        // Shadow at bottom (2px)
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(x, y + T - 2, T, 2);
-        // Baseboard / trim at bottom
-        ctx.fillStyle = '#e2e8f0';
+        // Top edge - wall cap / crown (darker, 3D depth)
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, T, 2);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x, y, T, 1);
+        // Bottom baseboard (wood tone)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y + T - 3, T, 3);
+        ctx.fillStyle = '#9a8265';
         ctx.fillRect(x, y + T - 3, T, 1);
+        // Inner shadow below cap
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x, y + 4, T, 2);
+        // Shadow above baseboard
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(x, y + T - 5, T, 2);
     }
 
     drawWallBottom(ctx, x, y, T) {
-        // Bottom wall with front face, baseboard, top edge highlight
-        ctx.fillStyle = '#3a4556';
+        // Modern clean horizontal bottom wall
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Top edge highlight (1px)
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x, y, T, 1);
-        ctx.fillStyle = '#c0c8d4';
-        ctx.fillRect(x, y + 1, T, 1);
-        // Brick pattern on main body
-        for (let row = 0; row < 3; row++) {
-            const by = 3 + row * 8;
-            const offset = (row % 2) * 5;
-            if (by + 6 >= T) break;
-            for (let col = -1; col < 5; col++) {
-                const bx = offset + col * 10;
-                const dX = Math.max(0, bx);
-                const dW = Math.min(bx + 9, T) - dX;
-                if (dW > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, 6);
-                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                    ctx.fillRect(x + dX, y + by, dW, 1);
-                }
-            }
-            ctx.fillStyle = '#2d3748';
-            ctx.fillRect(x, y + by + 6, T, 1);
+        // Subtle texture
+        ctx.fillStyle = 'rgba(0,0,0,0.02)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(x + (i * 5 + 1) % T, y + 3 + (i * 11) % (T - 8), 3, 2);
         }
-        // Baseboard at bottom (2px warm wood tone)
-        ctx.fillStyle = '#8a7560';
+        // Top baseboard (wood tone)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, T, 3);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x, y + 2, T, 1);
+        // Bottom edge - wall base / floor junction
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillStyle = '#a8a098';
         ctx.fillRect(x, y + T - 2, T, 2);
-        ctx.fillStyle = '#7a6550';
+        ctx.fillStyle = '#989088';
         ctx.fillRect(x, y + T - 1, T, 1);
+        // Shadow below baseboard
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x, y + 3, T, 2);
+        // Shadow at bottom
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(x, y + T - 5, T, 1);
     }
 
     drawWallLeft(ctx, x, y, T) {
-        // Vertical left wall with 3D treatment and bricks
-        ctx.fillStyle = '#3a4556';
+        // Modern clean vertical left wall
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Left face (lighter, top of wall from side view)
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x, y, 3, T);
-        ctx.fillStyle = '#6a7a8a';
-        ctx.fillRect(x, y, 1, T);
-        // Brick pattern on front face
-        for (let row = 0; row < 4; row++) {
-            const by = row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = 4 + offset + col * 10;
-                const dX = Math.max(4, bx);
-                const dW = Math.min(bx + 9, T) - dX;
-                const dH = Math.min(by + 6, T) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                    ctx.fillRect(x + dX, y + by, dW, 1);
-                }
-            }
-            if (by + 6 < T) {
-                ctx.fillStyle = '#2d3748';
-                ctx.fillRect(x + 4, y + by + 6, T - 4, 1);
-            }
+        // Subtle texture
+        ctx.fillStyle = 'rgba(0,0,0,0.02)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(x + 4 + (i * 7) % (T - 8), y + (i * 9 + 2) % T, 2, 3);
         }
-        // Right edge shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x + T - 2, y, 2, T);
-        // Inner edge trim
-        ctx.fillStyle = '#e2e8f0';
+        // Left edge - wall cap (3D depth)
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x, y, 1, T);
+        // Right baseboard (wood tone)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x + T - 3, y, 3, T);
+        ctx.fillStyle = '#9a8265';
         ctx.fillRect(x + T - 3, y, 1, T);
+        // Inner shadow after cap
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x + 4, y, 2, T);
+        // Shadow before baseboard
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(x + T - 5, y, 2, T);
     }
 
     drawWallRight(ctx, x, y, T) {
-        // Vertical right wall with 3D treatment and bricks
-        ctx.fillStyle = '#3a4556';
+        // Modern clean vertical right wall
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Right face (lighter)
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x + T - 3, y, 3, T);
-        ctx.fillStyle = '#6a7a8a';
-        ctx.fillRect(x + T - 1, y, 1, T);
-        // Brick pattern on front face
-        for (let row = 0; row < 4; row++) {
-            const by = row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = offset + col * 10;
-                const dX = Math.max(0, bx);
-                const dW = Math.min(bx + 9, T - 4) - dX;
-                const dH = Math.min(by + 6, T) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                    ctx.fillStyle = 'rgba(255,255,255,0.05)';
-                    ctx.fillRect(x + dX, y + by, dW, 1);
-                }
-            }
-            if (by + 6 < T) {
-                ctx.fillStyle = '#2d3748';
-                ctx.fillRect(x, y + by + 6, T - 4, 1);
-            }
+        // Subtle texture
+        ctx.fillStyle = 'rgba(0,0,0,0.02)';
+        for (let i = 0; i < 6; i++) {
+            ctx.fillRect(x + 2 + (i * 7) % (T - 8), y + (i * 11 + 1) % T, 2, 3);
         }
-        // Left edge shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x, y, 2, T);
-        // Inner edge trim
-        ctx.fillStyle = '#e2e8f0';
+        // Left baseboard (wood tone)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, 3, T);
+        ctx.fillStyle = '#9a8265';
         ctx.fillRect(x + 2, y, 1, T);
+        // Right edge - wall cap (3D depth)
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x + T - 4, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x + T - 2, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x + T - 1, y, 1, T);
+        // Shadow after baseboard
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x + 3, y, 2, T);
+        // Inner shadow before cap
+        ctx.fillStyle = 'rgba(0,0,0,0.05)';
+        ctx.fillRect(x + T - 6, y, 2, T);
     }
 
     drawWallCornerTL(ctx, x, y, T) {
-        // Top-left corner combining top and left wall faces
-        ctx.fillStyle = '#3a4556';
+        // Modern clean top-left corner
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Top face (horizontal, lighter)
-        ctx.fillStyle = '#6a7a8a';
-        ctx.fillRect(x, y, T, 3);
-        // Left face (vertical, lighter)
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x, y, 3, T);
-        // Corner highlight
-        ctx.fillStyle = '#7a8a9a';
-        ctx.fillRect(x, y, 3, 3);
+        // Top cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, T, 2);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x, y, T, 1);
+        // Left cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x, y, 1, T);
-        // Brick pattern on inner area
-        for (let row = 0; row < 3; row++) {
-            const by = 4 + row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = 4 + offset + col * 10;
-                const dX = Math.max(4, bx);
-                const dW = Math.min(bx + 9, T) - dX;
-                const dH = Math.min(by + 6, T - 4) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                }
-            }
-        }
-        // Inner edge trims (where wall meets room)
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x + 4, y + T - 2, T - 4, 1);  // bottom trim
-        ctx.fillRect(x + T - 2, y + 4, 1, T - 4);   // right trim
-        // Shadow at inner edges
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x + 4, y + T - 1, T - 4, 1);
-        ctx.fillRect(x + T - 1, y + 4, 1, T - 4);
+        // Corner accent
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x, y, 4, 4);
+        // Bottom baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x + 4, y + T - 3, T - 4, 3);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + 4, y + T - 3, T - 4, 1);
+        // Right baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x + T - 3, y + 4, 3, T - 7);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + T - 3, y + 4, 1, T - 7);
+        // Inner shadows
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x + 4, y + 4, T - 4, 2);
+        ctx.fillRect(x + 4, y + 4, 2, T - 4);
     }
 
     drawWallCornerTR(ctx, x, y, T) {
-        // Top-right corner combining top and right wall faces
-        ctx.fillStyle = '#3a4556';
+        // Modern clean top-right corner
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Top face
-        ctx.fillStyle = '#6a7a8a';
-        ctx.fillRect(x, y, T, 3);
-        // Right face
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x + T - 3, y, 3, T);
-        // Corner highlight
-        ctx.fillStyle = '#7a8a9a';
-        ctx.fillRect(x + T - 3, y, 3, 3);
+        // Top cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, T, 2);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x, y, T, 1);
+        // Right cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x + T - 4, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x + T - 2, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x + T - 1, y, 1, T);
-        // Brick pattern on inner area
-        for (let row = 0; row < 3; row++) {
-            const by = 4 + row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = offset + col * 10;
-                const dX = Math.max(0, bx);
-                const dW = Math.min(bx + 9, T - 4) - dX;
-                const dH = Math.min(by + 6, T - 4) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                }
-            }
-        }
-        // Inner edge trims
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x, y + T - 2, T - 4, 1);   // bottom trim
-        ctx.fillRect(x + 1, y + 4, 1, T - 4);    // left trim
-        // Shadow at inner edges
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x, y + T - 1, T - 4, 1);
-        ctx.fillRect(x, y + 4, 1, T - 4);
+        // Corner accent
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x + T - 4, y, 4, 4);
+        // Bottom baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y + T - 3, T - 4, 3);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x, y + T - 3, T - 4, 1);
+        // Left baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y + 4, 3, T - 7);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + 2, y + 4, 1, T - 7);
+        // Inner shadows
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x, y + 4, T - 4, 2);
+        ctx.fillRect(x + T - 6, y + 4, 2, T - 4);
     }
 
     drawWallCornerBL(ctx, x, y, T) {
-        // Bottom-left corner combining bottom and left wall faces
-        ctx.fillStyle = '#3a4556';
+        // Modern clean bottom-left corner
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Left face
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x, y, 3, T);
-        ctx.fillStyle = '#6a7a8a';
+        // Left cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x, y, 1, T);
-        // Bottom face
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x, y + T - 3, T, 3);
-        // Corner
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x, y + T - 3, 3, 3);
-        // Brick pattern on inner area
-        for (let row = 0; row < 3; row++) {
-            const by = row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = 4 + offset + col * 10;
-                const dX = Math.max(4, bx);
-                const dW = Math.min(bx + 9, T) - dX;
-                const dH = Math.min(by + 6, T - 4) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                }
-            }
-        }
-        // Inner edge trims
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x + 4, y, T - 4, 1);       // top trim
-        ctx.fillRect(x + T - 2, y, 1, T - 4);   // right trim
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x + T - 1, y, 1, T - 4);
-        ctx.fillRect(x + 4, y + T - 1, T - 4, 1);
+        // Bottom cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillStyle = '#a8a098';
+        ctx.fillRect(x, y + T - 2, T, 2);
+        ctx.fillStyle = '#989088';
+        ctx.fillRect(x, y + T - 1, T, 1);
+        // Corner accent
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y + T - 4, 4, 4);
+        // Top baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x + 4, y, T - 4, 3);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + 4, y + 2, T - 4, 1);
+        // Right baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x + T - 3, y, 3, T - 4);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + T - 3, y, 1, T - 4);
+        // Inner shadows
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x + 4, y + 3, 2, T - 7);
+        ctx.fillRect(x + 4, y + T - 6, T - 4, 2);
     }
 
     drawWallCornerBR(ctx, x, y, T) {
-        // Bottom-right corner combining bottom and right wall faces
-        ctx.fillStyle = '#3a4556';
+        // Modern clean bottom-right corner
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        // Right face
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x + T - 3, y, 3, T);
-        ctx.fillStyle = '#6a7a8a';
+        // Right cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x + T - 4, y, 4, T);
+        ctx.fillStyle = '#ccc4bc';
+        ctx.fillRect(x + T - 2, y, 2, T);
+        ctx.fillStyle = '#d8d0c8';
         ctx.fillRect(x + T - 1, y, 1, T);
-        // Bottom face
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x, y + T - 3, T, 3);
-        // Corner
-        ctx.fillStyle = '#5a6a7a';
-        ctx.fillRect(x + T - 3, y + T - 3, 3, 3);
-        // Brick pattern on inner area
-        for (let row = 0; row < 3; row++) {
-            const by = row * 8;
-            const offset = (row % 2) * 5;
-            for (let col = -1; col < 4; col++) {
-                const bx = offset + col * 10;
-                const dX = Math.max(0, bx);
-                const dW = Math.min(bx + 9, T - 4) - dX;
-                const dH = Math.min(by + 6, T - 4) - by;
-                if (dW > 0 && dH > 0) {
-                    ctx.fillStyle = (row + col) % 2 === 0 ? '#3d4a5c' : '#374252';
-                    ctx.fillRect(x + dX, y + by, dW, dH);
-                }
-            }
-        }
-        // Inner edge trims
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x, y, T - 4, 1);         // top trim
-        ctx.fillRect(x + 1, y, 1, T - 4);     // left trim
-        // Shadow
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x, y, 1, T - 4);
-        ctx.fillRect(x, y + T - 1, T - 4, 1);
+        // Bottom cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillStyle = '#a8a098';
+        ctx.fillRect(x, y + T - 2, T, 2);
+        ctx.fillStyle = '#989088';
+        ctx.fillRect(x, y + T - 1, T, 1);
+        // Corner accent
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x + T - 4, y + T - 4, 4, 4);
+        // Top baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, T - 4, 3);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x, y + 2, T - 4, 1);
+        // Left baseboard (wood)
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, 3, T - 4);
+        ctx.fillStyle = '#9a8265';
+        ctx.fillRect(x + 2, y, 1, T - 4);
+        // Inner shadows
+        ctx.fillStyle = 'rgba(0,0,0,0.06)';
+        ctx.fillRect(x + T - 6, y + 3, 2, T - 7);
+        ctx.fillRect(x, y + T - 6, T - 4, 2);
     }
 
     drawWallTJunctionDown(ctx, x, y, T) {
-        ctx.fillStyle = '#3a4556';
+        // Modern T-junction: wall at top, opening downward
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x, y, T, 12);
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fillRect(x, y, T, 2);
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect(x, y + T - 4, 10, 4);
-        ctx.fillRect(x + 22, y + T - 4, 10, 4);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x, y + T - 2, 10, 2);
-        ctx.fillRect(x + 22, y + T - 2, 10, 2);
-        // Opening in center bottom
-        ctx.fillStyle = '#1a1c2e';
-        ctx.fillRect(x + 10, y + 12, 12, T - 12);
+        // Top cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x, y, T, 1);
+        // Left wall segment with baseboard
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y + T - 3, 10, 3);
+        ctx.fillRect(x + 22, y + T - 3, 10, 3);
+        // Opening in center bottom (corridor)
+        ctx.fillStyle = '#d5cfc8';
+        ctx.fillRect(x + 10, y + 4, 12, T - 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(x + 10, y + 4, 1, T - 4);
+        ctx.fillRect(x + 21, y + 4, 1, T - 4);
     }
 
     drawWallTJunctionUp(ctx, x, y, T) {
-        ctx.fillStyle = '#3a4556';
+        // Modern T-junction: wall at bottom, opening upward
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect(x, y + 20, T, 12);
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        ctx.fillRect(x, y + T - 3, T, 3);
-        ctx.fillStyle = '#e2e8f0';
-        ctx.fillRect(x, y, 10, 2);
-        ctx.fillRect(x + 22, y, 10, 2);
+        // Bottom cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillStyle = '#989088';
+        ctx.fillRect(x, y + T - 1, T, 1);
+        // Baseboard segments
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, 10, 3);
+        ctx.fillRect(x + 22, y, 10, 3);
         // Opening in center top
-        ctx.fillStyle = '#1a1c2e';
-        ctx.fillRect(x + 10, y, 12, 12);
+        ctx.fillStyle = '#d5cfc8';
+        ctx.fillRect(x + 10, y, 12, T - 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(x + 10, y, 1, T - 4);
+        ctx.fillRect(x + 21, y, 1, T - 4);
     }
 
     drawWallTJunctionLeft(ctx, x, y, T) {
-        ctx.fillStyle = '#3a4556';
+        // Modern T-junction: wall at right, opening left
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x + 20, y, 12, T);
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fillRect(x + T - 2, y, 2, T);
-        ctx.fillStyle = '#2d3748';
-        ctx.fillRect(x, y, 4, 10);
-        ctx.fillRect(x, y + 22, 4, 10);
+        // Right cap
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x + T - 4, y, 4, T);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x + T - 1, y, 1, T);
+        // Baseboard segments
+        ctx.fillStyle = '#8b7355';
+        ctx.fillRect(x, y, 3, 10);
+        ctx.fillRect(x, y + 22, 3, 10);
         // Opening in center left
-        ctx.fillStyle = '#1a1c2e';
-        ctx.fillRect(x, y + 10, 20, 12);
+        ctx.fillStyle = '#d5cfc8';
+        ctx.fillRect(x, y + 10, T - 4, 12);
+        ctx.fillStyle = 'rgba(0,0,0,0.04)';
+        ctx.fillRect(x, y + 10, T - 4, 1);
+        ctx.fillRect(x, y + 21, T - 4, 1);
     }
 
     drawWallDoorFrame(ctx, x, y, T) {
-        ctx.fillStyle = '#3a4556';
+        // Modern door frame with clean lines
+        ctx.fillStyle = '#e8e4e0';
         ctx.fillRect(x, y, T, T);
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x, y, T, 8);
-        ctx.fillStyle = 'rgba(255,255,255,0.08)';
-        ctx.fillRect(x, y, T, 2);
-        // Door frame posts
-        ctx.fillStyle = '#5a6a7e';
-        ctx.fillRect(x + 4, y + 8, 3, T - 8);
-        ctx.fillRect(x + 25, y + 8, 3, T - 8);
+        // Crown at top
+        ctx.fillStyle = '#b8b0a8';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#d8d0c8';
+        ctx.fillRect(x, y, T, 1);
+        // Door frame posts (dark wood)
+        ctx.fillStyle = '#6b5a42';
+        ctx.fillRect(x + 4, y + 4, 3, T - 4);
+        ctx.fillRect(x + 25, y + 4, 3, T - 4);
+        // Lintel (horizontal beam)
+        ctx.fillStyle = '#7a6950';
+        ctx.fillRect(x + 4, y + 4, 24, 3);
+        ctx.fillStyle = '#8b7860';
+        ctx.fillRect(x + 4, y + 4, 24, 1);
         // Door opening
-        ctx.fillStyle = '#1a1c2e';
-        ctx.fillRect(x + 7, y + 8, 18, T - 8);
-        // Lintel
-        ctx.fillStyle = '#4a5568';
-        ctx.fillRect(x + 4, y + 6, 24, 3);
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        ctx.fillRect(x + 4, y + 6, 24, 1);
+        ctx.fillStyle = '#d5cfc8';
+        ctx.fillRect(x + 7, y + 7, 18, T - 7);
         // Threshold
-        ctx.fillStyle = '#6b7a8e';
+        ctx.fillStyle = '#8b7355';
         ctx.fillRect(x + 7, y + T - 2, 18, 2);
     }
 
