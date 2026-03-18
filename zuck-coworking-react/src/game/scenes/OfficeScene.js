@@ -990,9 +990,8 @@ export class OfficeScene extends Phaser.Scene {
         const tileX = Math.floor(this.player.x / TILE_SIZE);
         const tileY = Math.floor(this.player.y / TILE_SIZE);
 
-        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126, kart=181
-        // tile.index = GID, so check directly
-        const SITTABLE_GIDS = [28, 27, 36, 125, 126, KART_GID];
+        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126, gamingChair=143, kart=181
+        const SITTABLE_GIDS = [28, 27, 36, 125, 126, 143, KART_GID];
         const candidates = [];
 
         // Range ±2 to compensate for collision stopping player before adjacent tile
@@ -1018,7 +1017,8 @@ export class OfficeScene extends Phaser.Scene {
                             tileX: checkX,
                             tileY: checkY,
                             gid,
-                            type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : 'other',
+                            rotation: tile.rotation || 0,
+                            type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : gid === 143 ? 'chair' : 'other',
                             score: dist + facingBonus
                         });
                     }
@@ -1030,25 +1030,41 @@ export class OfficeScene extends Phaser.Scene {
         candidates.sort((a, b) => a.score - b.score);
         let nearSeat = candidates.length > 0 ? candidates[0] : null;
 
-        // Detect face direction: look for desk/table adjacent to the seat
+        // Detect face direction: first check tile rotation, then look for adjacent desk
         if (nearSeat) {
-            const DESK_GIDS = [23, 24, 121, 122, 123, 124]; // desk, meeting table, desk2x2 parts GIDs
-            let faceDir = this.playerDirection || 'down';
-            const neighbors = [
-                { dx: 0, dy: -1, dir: 'up' },
-                { dx: 0, dy: 1, dir: 'down' },
-                { dx: -1, dy: 0, dir: 'left' },
-                { dx: 1, dy: 0, dir: 'right' }
-            ];
-            for (const n of neighbors) {
-                const adjTile = this.wallsLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy)
-                             || (this.frontLayer && this.frontLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy));
-                if (adjTile && DESK_GIDS.includes(adjTile.index)) {
-                    faceDir = n.dir;
-                    break;
+            const DESK_GIDS = [23, 24, 121, 122, 123, 124];
+            let faceDir = null;
+
+            // 1. Use tile rotation if the seat has been rotated
+            if (nearSeat.rotation) {
+                const r = nearSeat.rotation;
+                const PI = Math.PI;
+                if (Math.abs(r) < 0.1) faceDir = 'down';
+                else if (Math.abs(r - PI / 2) < 0.1) faceDir = 'left';
+                else if (Math.abs(r - PI) < 0.1) faceDir = 'up';
+                else if (Math.abs(r - 3 * PI / 2) < 0.1) faceDir = 'right';
+            }
+
+            // 2. If no rotation, look for adjacent desk to face towards
+            if (!faceDir) {
+                const neighbors = [
+                    { dx: 0, dy: -1, dir: 'up' },
+                    { dx: 0, dy: 1, dir: 'down' },
+                    { dx: -1, dy: 0, dir: 'left' },
+                    { dx: 1, dy: 0, dir: 'right' }
+                ];
+                for (const n of neighbors) {
+                    const adjTile = this.wallsLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy)
+                                 || (this.frontLayer && this.frontLayer.getTileAt(nearSeat.tileX + n.dx, nearSeat.tileY + n.dy));
+                    if (adjTile && DESK_GIDS.includes(adjTile.index)) {
+                        faceDir = n.dir;
+                        break;
+                    }
                 }
             }
-            nearSeat.faceDirection = faceDir;
+
+            // 3. Fallback to player direction
+            nearSeat.faceDirection = faceDir || this.playerDirection || 'down';
         }
 
         if (nearSeat && !this._lastNearSeat) {
