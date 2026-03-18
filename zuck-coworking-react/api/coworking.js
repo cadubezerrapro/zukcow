@@ -53,6 +53,8 @@ export default async function handler(req, res) {
             case 'lock_room': return await handleLockRoom(res, userId, req);
             case 'unlock_room': return await handleUnlockRoom(res, userId, req);
             case 'get_room_locks': return await handleGetRoomLocks(res, req);
+            case 'furniture_edit': return await handleFurnitureEdit(res, userId, req);
+            case 'get_furniture': return await handleGetFurniture(res, req);
             default:
                 return res.json({ success: false, message: 'Acao invalida' });
         }
@@ -334,6 +336,49 @@ async function handleDebugUsers(res, req) {
         };
     }
     return res.json({ success: true, space_id: spaceId, heartbeat_ttl: HEARTBEAT_TTL, users: debug });
+}
+
+// --- Furniture sync ---
+
+async function handleFurnitureEdit(res, userId, req) {
+    const body = parseBody(req);
+    const spaceId = parseInt(body.space_id || '1');
+    const editJson = body.edit;
+
+    if (!editJson) {
+        return res.json({ success: false, message: 'edit obrigatorio' });
+    }
+
+    let edit;
+    try { edit = typeof editJson === 'string' ? JSON.parse(editJson) : editJson; }
+    catch { return res.json({ success: false, message: 'edit invalido' }); }
+
+    edit.by = userId;
+    edit.ts = Date.now();
+
+    const key = `cowork:space:${spaceId}:furniture`;
+    await redis.rpush(key, JSON.stringify(edit));
+
+    // Increment version counter
+    const versionKey = `cowork:space:${spaceId}:furniture_version`;
+    const version = await redis.incr(versionKey);
+
+    return res.json({ success: true, version });
+}
+
+async function handleGetFurniture(res, req) {
+    const spaceId = parseInt(req.query.space_id || '1');
+    const sinceIndex = parseInt(req.query.since || '0');
+
+    const key = `cowork:space:${spaceId}:furniture`;
+    const allEdits = await redis.lrange(key, sinceIndex, -1);
+
+    const edits = (allEdits || []).map(raw => typeof raw === 'string' ? JSON.parse(raw) : raw);
+    const versionKey = `cowork:space:${spaceId}:furniture_version`;
+    const version = parseInt(await redis.get(versionKey) || '0');
+    const totalEdits = await redis.llen(key);
+
+    return res.json({ success: true, edits, version, total: totalEdits });
 }
 
 // --- Helpers ---

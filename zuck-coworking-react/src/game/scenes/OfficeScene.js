@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import eventBus from '../../utils/eventBus';
 import mapData from '../maps/default_office.json';
+import { sendFurnitureEdit, getFurnitureEdits } from '../../services/api';
 
 const TILE_SIZE = 64;
 const PLAYER_SPEED = 320;
@@ -77,6 +78,53 @@ export class OfficeScene extends Phaser.Scene {
         this.resetNonRotatableTiles();
         this.applyMapEdits();
         this.addRoomLabels();
+
+        // Furniture multiplayer sync
+        this._furnitureVersion = 0;
+        this._furnitureTotal = 0;
+        this.loadServerFurniture();
+
+        // Listen for furniture version changes from polling
+        eventBus.on('furniture:version_changed', (version) => {
+            if (version > this._furnitureVersion) {
+                this.fetchNewFurnitureEdits();
+            }
+        });
+    }
+
+    async loadServerFurniture() {
+        try {
+            const result = await getFurnitureEdits(0);
+            if (result.success && result.edits.length > 0) {
+                const myId = window.USER_ID || localStorage.getItem('cowork_user_id') || '';
+                result.edits.forEach(edit => {
+                    // Apply all edits (including own — they might come from other sessions)
+                    this.applyRemoteEdit(edit);
+                });
+                this._furnitureVersion = result.version;
+                this._furnitureTotal = result.total;
+            }
+        } catch (e) {
+            console.warn('Failed to load server furniture:', e);
+        }
+    }
+
+    async fetchNewFurnitureEdits() {
+        try {
+            const result = await getFurnitureEdits(this._furnitureTotal);
+            if (result.success && result.edits.length > 0) {
+                const myId = window.USER_ID || localStorage.getItem('cowork_user_id') || '';
+                result.edits.forEach(edit => {
+                    // Skip own edits (already applied locally)
+                    if (edit.by === myId) return;
+                    this.applyRemoteEdit(edit);
+                });
+                this._furnitureVersion = result.version;
+                this._furnitureTotal = result.total;
+            }
+        } catch (e) {
+            console.warn('Failed to fetch new furniture edits:', e);
+        }
     }
 
     autoRotateChairs() {
@@ -147,6 +195,29 @@ export class OfficeScene extends Phaser.Scene {
             localStorage.setItem('coworking_map_edits', JSON.stringify(edits));
         } catch (e) {
             // Ignore storage errors
+        }
+        // Sync to server for other players
+        sendFurnitureEdit(edit).catch(() => {});
+    }
+
+    applyRemoteEdit(edit) {
+        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        try {
+            if (edit.type === 'delete') {
+                this.wallsLayer.removeTileAt(edit.x, edit.y);
+            } else if (edit.type === 'place') {
+                this.wallsLayer.putTileAt(edit.tileId, edit.x, edit.y);
+                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                if (tile && edit.rotation) tile.rotation = edit.rotation;
+            } else if (edit.type === 'rotate') {
+                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
+            } else if (edit.type === 'flip') {
+                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                if (tile) tile.flipX = edit.flipX;
+            }
+        } catch (e) {
+            // Ignore errors from applying remote edits
         }
     }
 

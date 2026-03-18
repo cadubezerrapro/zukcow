@@ -107,3 +107,17 @@ export async function getRoomLocks(spaceId = 1) {
     const { data } = await api.get(`${API_BASE}?action=get_room_locks&space_id=${spaceId}`);
     return data;
 }
+
+// Furniture sync
+export async function sendFurnitureEdit(edit, spaceId = 1) {
+    const { data } = await api.post(`${API_BASE}?action=furniture_edit`, buildParams({
+        edit: JSON.stringify(edit),
+        space_id: spaceId
+    }));
+    return data;
+}
+
+export async function getFurnitureEdits(sinceIndex = 0, spaceId = 1) {
+    const { data } = await api.get(`${API_BASE}?action=get_furniture&space_id=${spaceId}&since=${sinceIndex}`);
+    return data;
+}

@@ -45,7 +45,8 @@ class SSEService {
                 if (data.type === 'positions') {
                     eventBus.emit('remote:players_update', data.players, {
                         room_locks: data.room_locks,
-                        signals: data.signals
+                        signals: data.signals,
+                        furniture_version: data.furniture_version
                     });
                 }
 

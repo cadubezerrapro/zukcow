@@ -195,6 +195,10 @@ export default function App() {
                     handleIncomingSignal(sig.from_user_id, sig.signal_type, sig.payload);
                 });
             }
+            // Handle furniture version changes
+            if (extra?.furniture_version !== undefined) {
+                eventBus.emit('furniture:version_changed', extra.furniture_version);
+            }
         });
 
         const unsubMoved = eventBus.on('player:moved', ({ x, y, direction, is_sitting }) => {

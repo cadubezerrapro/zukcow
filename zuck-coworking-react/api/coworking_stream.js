@@ -75,10 +75,14 @@ export default async function handler(req, res) {
             roomLocks[roomId] = lock.locked_by;
         }
 
+        // Get furniture version
+        const furnitureVersion = parseInt(await redis.get(`cowork:space:${spaceId}:furniture_version`) || '0');
+
         const data = {
             type: 'positions',
             players,
             room_locks: roomLocks,
+            furniture_version: furnitureVersion,
             timestamp: Math.floor(now / 1000)
         };
 
