@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Move, Trash2, Pencil, X, Copy, RotateCw, Plus, Package } from 'lucide-react';
+import { Move, Trash2, Pencil, X, Copy, RotateCw, Plus, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const TILE_NAMES = {
     // Floors
@@ -485,25 +485,56 @@ export default function FurnitureEditor({
                             />
                         </div>
 
-                        {/* Category tabs */}
+                        {/* Category tabs with scroll arrows */}
                         {!searchQuery && (
-                            <div className="flex gap-1 px-3 py-2 overflow-x-auto border-b border-gray-700/30"
-                                style={{ scrollbarWidth: 'none' }}
-                            >
-                                {CATALOG.map((cat, i) => (
-                                    <button
-                                        key={cat.name}
-                                        onClick={() => setActiveCategory(i)}
-                                        className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
-                                            activeCategory === i
-                                                ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
-                                                : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/40 border border-transparent'
-                                        }`}
-                                    >
-                                        <span>{cat.icon}</span>
-                                        <span>{cat.name}</span>
-                                    </button>
-                                ))}
+                            <div className="relative flex items-center border-b border-gray-700/30">
+                                <button
+                                    onClick={() => {
+                                        const el = document.getElementById('catalog-tabs');
+                                        if (el) el.scrollBy({ left: -120, behavior: 'smooth' });
+                                    }}
+                                    className="flex-shrink-0 p-1 text-gray-500 hover:text-white transition-colors cursor-pointer z-10"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <div
+                                    id="catalog-tabs"
+                                    className="flex gap-1 py-2 overflow-x-auto flex-1"
+                                    style={{ scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch' }}
+                                    onMouseDown={(e) => {
+                                        const el = e.currentTarget;
+                                        const startX = e.pageX;
+                                        const scrollLeft = el.scrollLeft;
+                                        const onMove = (ev) => { el.scrollLeft = scrollLeft - (ev.pageX - startX); };
+                                        const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+                                        document.addEventListener('mousemove', onMove);
+                                        document.addEventListener('mouseup', onUp);
+                                    }}
+                                >
+                                    {CATALOG.map((cat, i) => (
+                                        <button
+                                            key={cat.name}
+                                            onClick={() => setActiveCategory(i)}
+                                            className={`flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-all cursor-pointer ${
+                                                activeCategory === i
+                                                    ? 'bg-emerald-500/25 text-emerald-300 border border-emerald-500/40'
+                                                    : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700/40 border border-transparent'
+                                            }`}
+                                        >
+                                            <span>{cat.icon}</span>
+                                            <span>{cat.name}</span>
+                                        </button>
+                                    ))}
+                                </div>
+                                <button
+                                    onClick={() => {
+                                        const el = document.getElementById('catalog-tabs');
+                                        if (el) el.scrollBy({ left: 120, behavior: 'smooth' });
+                                    }}
+                                    className="flex-shrink-0 p-1 text-gray-500 hover:text-white transition-colors cursor-pointer z-10"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
                             </div>
                         )}
 
