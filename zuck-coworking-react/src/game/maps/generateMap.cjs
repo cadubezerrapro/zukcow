@@ -143,6 +143,7 @@ const GID = {
   VENDING_2_BOT: 140,
   ARCADE_2_TOP: 141,
   ARCADE_2_BOT: 142,
+  KART: 181,
 };
 
 // ── Layer data ─────────────────────────────────────────────────────────────
@@ -841,6 +842,19 @@ for (const [r, c] of bottomBushes) {
 setTile(walls, GID.SOFA, 43, 35);
 setTile(walls, GID.SOFA, 47, 62);
 setTile(walls, GID.SOFA, 53, 45);
+
+// Karts (5 units in outdoor area)
+setTile(walls, GID.KART, 40, 45);
+setTile(walls, GID.KART, 40, 48);
+setTile(walls, GID.KART, 40, 51);
+setTile(walls, GID.KART, 40, 54);
+setTile(walls, GID.KART, 40, 57);
+// Stone pad under karts
+for (let c = 45; c <= 57; c++) {
+  setTile(ground, GID.STONE_PATH, 39, c);
+  setTile(ground, GID.STONE_PATH, 40, c);
+  setTile(ground, GID.STONE_PATH, 41, c);
+}
 
 // Bridge over second pond
 setTile(walls, GID.BRIDGE, 50, 11);

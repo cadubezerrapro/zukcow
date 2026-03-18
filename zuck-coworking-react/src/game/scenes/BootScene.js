@@ -289,6 +289,9 @@ export class BootScene extends Phaser.Scene {
             case 178: this.drawTrophy(ctx, x, y, T); break;
             case 179: this.drawCorkboard(ctx, x, y, T); break;
 
+            // Vehicles
+            case 180: this.drawKart(ctx, x, y, T); break;
+
             default:
                 ctx.fillStyle = '#1a1c2e';
                 ctx.fillRect(x, y, T, T);
@@ -7554,5 +7557,76 @@ export class BootScene extends Phaser.Scene {
         ctx.fillStyle = '#dc2626';
         ctx.fillRect(x+8, y+7, 2, 2); ctx.fillRect(x+16, y+8, 2, 2);
         ctx.fillRect(x+22, y+7, 2, 2); ctx.fillRect(x+9, y+15, 2, 2);
+    }
+
+    // ==========================================
+    // VEHICLES
+    // ==========================================
+
+    drawKart(ctx, x, y, T) {
+        // Transparent background — ground shows through
+        // Shadow under kart
+        ctx.fillStyle = 'rgba(0,0,0,0.2)';
+        ctx.beginPath(); ctx.ellipse(x + 16, y + 28, 14, 4, 0, 0, Math.PI * 2); ctx.fill();
+
+        // Wheels (back)
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(x + 3, y + 22, 5, 6);
+        ctx.fillRect(x + 24, y + 22, 5, 6);
+        // Wheel highlights
+        ctx.fillStyle = '#3a3a5e';
+        ctx.fillRect(x + 4, y + 23, 3, 2);
+        ctx.fillRect(x + 25, y + 23, 3, 2);
+
+        // Kart body (red)
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(x + 6, y + 12, 20, 16);
+        // Rounded front
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(x + 8, y + 10, 16, 2);
+        // Darker side
+        ctx.fillStyle = '#b91c1c';
+        ctx.fillRect(x + 6, y + 22, 20, 4);
+        ctx.fillRect(x + 24, y + 12, 2, 14);
+
+        // Cockpit (dark seat area)
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(x + 9, y + 14, 14, 8);
+        // Seat
+        ctx.fillStyle = '#334155';
+        ctx.fillRect(x + 11, y + 15, 10, 6);
+
+        // Steering wheel
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(x + 15, y + 13, 2, 3);
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(x + 14, y + 12, 4, 2);
+
+        // Front wheels
+        ctx.fillStyle = '#1a1a2e';
+        ctx.fillRect(x + 5, y + 10, 4, 4);
+        ctx.fillRect(x + 23, y + 10, 4, 4);
+        ctx.fillStyle = '#3a3a5e';
+        ctx.fillRect(x + 6, y + 11, 2, 2);
+        ctx.fillRect(x + 24, y + 11, 2, 2);
+
+        // Racing stripe (white)
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(x + 15, y + 10, 2, 18);
+
+        // Number "1" on side
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(x + 7, y + 16, 1, 4);
+        ctx.fillRect(x + 8, y + 15, 1, 1);
+
+        // Exhaust pipes
+        ctx.fillStyle = '#6b7280';
+        ctx.fillRect(x + 12, y + 27, 2, 2);
+        ctx.fillRect(x + 18, y + 27, 2, 2);
+
+        // Headlights
+        ctx.fillStyle = '#fde047';
+        ctx.fillRect(x + 8, y + 10, 2, 1);
+        ctx.fillRect(x + 22, y + 10, 2, 1);
     }
 }

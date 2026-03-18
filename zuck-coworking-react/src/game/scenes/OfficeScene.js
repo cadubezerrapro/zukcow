@@ -5,6 +5,8 @@ import { sendFurnitureEdit, getFurnitureEdits } from '../../services/api';
 
 const TILE_SIZE = 64;
 const PLAYER_SPEED = 320;
+const KART_SPEED = 640;
+const KART_GID = 181;
 const POSITION_SEND_INTERVAL = 100;
 const AVATAR_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gray'];
 
@@ -31,6 +33,7 @@ export class OfficeScene extends Phaser.Scene {
         this.playerDirection = 'down';
         this.currentRoom = null;
         this.isSitting = false;
+        this.isInKart = false;
         this.currentSeat = null;
         // Furniture editor
         this.editorMode = false;
@@ -632,13 +635,13 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     handleMovement() {
-        // If sitting, block movement — only X key to stand up
-        if (this.isSitting) {
+        // If sitting on a regular seat, block movement
+        if (this.isSitting && !this.isInKart) {
             this.player.setVelocity(0, 0);
             return;
         }
 
-        const speed = PLAYER_SPEED;
+        const speed = this.isInKart ? KART_SPEED : PLAYER_SPEED;
         let vx = 0;
         let vy = 0;
 
@@ -895,9 +898,9 @@ export class OfficeScene extends Phaser.Scene {
         const tileX = Math.floor(this.player.x / TILE_SIZE);
         const tileY = Math.floor(this.player.y / TILE_SIZE);
 
-        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126
+        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126, kart=181
         // tile.index = GID, so check directly
-        const SITTABLE_GIDS = [28, 27, 36, 125, 126];
+        const SITTABLE_GIDS = [28, 27, 36, 125, 126, KART_GID];
         const candidates = [];
 
         // Range ±2 to compensate for collision stopping player before adjacent tile
@@ -923,7 +926,7 @@ export class OfficeScene extends Phaser.Scene {
                             tileX: checkX,
                             tileY: checkY,
                             gid,
-                            type: gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : 'other',
+                            type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : 'other',
                             score: dist + facingBonus
                         });
                     }
@@ -969,28 +972,45 @@ export class OfficeScene extends Phaser.Scene {
         this.isSitting = true;
         this.currentSeat = seatInfo;
 
+        const isKart = seatInfo.type === 'kart';
+        this.isInKart = isKart;
+
         const dir = seatInfo.faceDirection || this.playerDirection || 'down';
 
         // Target: exact center of the furniture tile
         const px = seatInfo.tileX * TILE_SIZE + TILE_SIZE / 2;
         const py = seatInfo.tileY * TILE_SIZE + TILE_SIZE / 2;
 
-        // Stop all movement, disable collision, then teleport via body.reset
+        // Stop all movement, teleport to seat
         this.player.setVelocity(0, 0);
-        if (this.player.body) {
-            this.player.body.checkCollision.none = true;
-            this.player.body.reset(px, py);
-        }
-        // Also set sprite position directly to be sure
-        this.player.x = px;
-        this.player.y = py;
 
-        // Squish sprite to look seated
-        this.player.setScale(2, 1.4);
-        this.player.setOffset(6, 42);
-        // Depth between walls layer (0) and furniture_front layer (20)
-        // This makes monitors render IN FRONT of player (Gather.town style)
-        this.player.setDepth(12);
+        if (isKart) {
+            // Kart: keep collision, allow movement at 2x speed
+            if (this.player.body) {
+                this.player.body.reset(px, py);
+            }
+            this.player.x = px;
+            this.player.y = py;
+            // Slightly smaller to show "riding"
+            this.player.setScale(2, 1.6);
+            this.player.setOffset(6, 40);
+            this.player.setDepth(10);
+            // Remove the kart tile from the map (player "picked it up")
+            if (this.wallsLayer) {
+                this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
+            }
+        } else {
+            // Regular seat: disable collision, squish sprite
+            if (this.player.body) {
+                this.player.body.checkCollision.none = true;
+                this.player.body.reset(px, py);
+            }
+            this.player.x = px;
+            this.player.y = py;
+            this.player.setScale(2, 1.4);
+            this.player.setOffset(6, 42);
+            this.player.setDepth(12);
+        }
 
         const animKey = `char_${this.avatarColor}_idle_${dir}`;
         this.player.anims.play(animKey, true);
@@ -1005,25 +1025,37 @@ export class OfficeScene extends Phaser.Scene {
     standUp() {
         if (!this.isSitting) return;
         const seat = this.currentSeat;
+        const wasInKart = this.isInKart;
         this.isSitting = false;
         this.currentSeat = null;
+        this.isInKart = false;
 
         // Restore normal scale, offset, and depth
         this.player.setScale(2, 2);
         this.player.setOffset(6, 36);
         this.player.setDepth(10);
 
-        // Re-enable collision
-        if (this.player.body) {
-            this.player.body.checkCollision.none = false;
+        if (wasInKart) {
+            // Place the kart tile back at player's current position
+            const tileX = Math.floor(this.player.x / TILE_SIZE);
+            const tileY = Math.floor(this.player.y / TILE_SIZE);
+            if (this.wallsLayer) {
+                this.wallsLayer.putTileAt(KART_GID, tileX, tileY);
+            }
+            // Step off the kart
+            this.player.y -= TILE_SIZE;
+        } else {
+            // Re-enable collision (kart never disabled it)
+            if (this.player.body) {
+                this.player.body.checkCollision.none = false;
+            }
+            // Move AWAY from desk to avoid clipping into it
+            const dir = seat?.faceDirection || 'down';
+            if (dir === 'up') this.player.y += TILE_SIZE;
+            else if (dir === 'down') this.player.y -= TILE_SIZE;
+            else if (dir === 'left') this.player.x += TILE_SIZE;
+            else if (dir === 'right') this.player.x -= TILE_SIZE;
         }
-
-        // Move AWAY from desk to avoid clipping into it
-        const dir = seat?.faceDirection || 'down';
-        if (dir === 'up') this.player.y += TILE_SIZE;
-        else if (dir === 'down') this.player.y -= TILE_SIZE;
-        else if (dir === 'left') this.player.x += TILE_SIZE;
-        else if (dir === 'right') this.player.x -= TILE_SIZE;
 
         eventBus.emit('seat:stood_up');
 

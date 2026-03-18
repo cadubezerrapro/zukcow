@@ -60,6 +60,8 @@ const TILE_NAMES = {
     169: 'Espelho', 170: 'Lustre', 171: 'Ventilador', 172: 'Rack TV',
     173: 'Cofre', 174: 'Sapateira', 175: 'Porta Guarda-Chuva', 176: 'Porta Retrato',
     177: 'Globo', 178: 'Trofeu', 179: 'Quadro Cortica',
+    // Vehicles
+    180: 'Kart',
 };
 
 // Catalog organized by categories — expanded with ALL tiles
@@ -308,6 +310,7 @@ const CATALOG = [
             { id: 163, name: 'Fogueira' },
             { id: 164, name: 'Rede' },
             { id: 165, name: 'Guarda-Sol' },
+            { id: 180, name: 'Kart' },
         ]
     },
     {
