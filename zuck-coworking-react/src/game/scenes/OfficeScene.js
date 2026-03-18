@@ -162,7 +162,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     autoRotateChairs() {
-        const CHAIR_TILES = [27, 28, 36, 125, 126]; // sofa(27), chair(28), puff(36), sofa2x1_L(125), sofa2x1_R(126) GIDs
+        const CHAIR_TILES = [27, 28, 36, 125, 126, 143]; // sofa(27), chair(28), puff(36), sofa2x1_L(125), sofa2x1_R(126), gamingChair(143) GIDs
         const DESK_TILES = [23, 24, 121, 122, 123, 124];  // desk(23), meeting table(24), desk2x2 parts GIDs
         // Chair sprite faces DOWN by default. Rotation is CW.
         // To face UP (desk above): 180°. To face LEFT (desk left): 270°. To face RIGHT (desk right): 90°.
@@ -1036,13 +1036,15 @@ export class OfficeScene extends Phaser.Scene {
             let faceDir = null;
 
             // 1. Use tile rotation if the seat has been rotated
+            // Chair sprites face DOWN at rotation=0. CW rotation:
+            // 0=down, π/2=right, π=up, 3π/2=left (matching autoRotateChairs)
             if (nearSeat.rotation) {
                 const r = nearSeat.rotation;
                 const PI = Math.PI;
                 if (Math.abs(r) < 0.1) faceDir = 'down';
-                else if (Math.abs(r - PI / 2) < 0.1) faceDir = 'left';
+                else if (Math.abs(r - PI / 2) < 0.1) faceDir = 'right';
                 else if (Math.abs(r - PI) < 0.1) faceDir = 'up';
-                else if (Math.abs(r - 3 * PI / 2) < 0.1) faceDir = 'right';
+                else if (Math.abs(r - 3 * PI / 2) < 0.1) faceDir = 'left';
             }
 
             // 2. If no rotation, look for adjacent desk to face towards
