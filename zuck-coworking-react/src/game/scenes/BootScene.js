@@ -877,8 +877,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawTreePine(ctx, x, y, T) {
-        // 3D Isometric pine tree with volume
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric pine tree — transparent background (ground shows through)
         // Large shadow on ground
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath(); ctx.ellipse(x + 16, y + 29, 11, 4, 0, 0, Math.PI * 2); ctx.fill();
@@ -950,8 +949,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawTreeRound(ctx, x, y, T) {
-        // 3D Isometric round tree with depth shading
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric round tree — transparent background
         // Large shadow (ellipse)
         ctx.fillStyle = 'rgba(0,0,0,0.2)';
         ctx.beginPath(); ctx.ellipse(x + 16, y + 29, 12, 4.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -1012,8 +1010,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawBush(ctx, x, y, T) {
-        // 3D Isometric bush/hedge with rounded volume
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric bush/hedge — transparent background
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.18)';
         ctx.beginPath(); ctx.ellipse(x + 16, y + 27, 13, 4, 0, 0, Math.PI * 2); ctx.fill();
@@ -1055,8 +1052,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawFlowerBed(ctx, x, y, T) {
-        // 3D Isometric raised flower bed
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric raised flower bed — transparent background
         // Raised bed: wood edges showing 3D front face
         // Front face (darker wood)
         ctx.fillStyle = '#6b4a28';
@@ -2937,12 +2933,10 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterDeep(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 2);
-        // Very subtle depth — keeps seamless with edges
-        ctx.fillStyle = 'rgba(0,10,20,0.05)';
-        ctx.fillRect(x, y, T, T);
-        // Sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        // Identical base as edges — no darkening overlay for seamless blending
+        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        // Tiny sparkles only
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
         ctx.fillRect(x + 6, y + 4, 1, 1);
         ctx.fillRect(x + 22, y + 12, 1, 1);
         ctx.fillRect(x + 14, y + 24, 1, 1);
@@ -2950,43 +2944,14 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterShallow(ctx, x, y, T) {
-        // Shallow water — same base as deep/edge for seamless blending
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 4);
-        // Slightly lighter tint (shallower = more light)
-        ctx.fillStyle = 'rgba(60,180,230,0.08)';
-        ctx.fillRect(x, y, T, T);
-        // Ground hints
-        ctx.fillStyle = 'rgba(42,112,80,0.06)';
-        ctx.fillRect(x + 4, y + 12, 5, 3);
-        ctx.fillRect(x + 18, y + 22, 4, 3);
-        ctx.fillRect(x + 10, y + 4, 4, 3);
-        // Wave lines (reuse existing code below)
-        ctx.fillStyle = '#4aa5d4';
-        for (let wy = 2; wy < T; wy += 5) {
-            for (let wx = 0; wx < T; wx++) {
-                const wave = Math.sin((wx + wy * 3) * 0.3) * 1;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
-            }
-        }
-        // Lighter accents
-        ctx.fillStyle = 'rgba(80,180,230,0.5)';
-        for (let wy = 4; wy < T; wy += 6) {
-            for (let wx = 0; wx < T; wx += 2) {
-                const wave = Math.cos((wx + wy) * 0.4) * 1;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 2, 1);
-            }
-        }
+        // Identical to deep/edge for seamless blending
+        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
         // Sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.45)';
+        ctx.fillStyle = 'rgba(255,255,255,0.2)';
         ctx.fillRect(x + 5, y + 3, 1, 1);
         ctx.fillRect(x + 18, y + 8, 1, 1);
         ctx.fillRect(x + 28, y + 16, 1, 1);
         ctx.fillRect(x + 8, y + 22, 1, 1);
-        ctx.fillStyle = 'rgba(255,255,255,0.25)';
-        ctx.fillRect(x + 14, y + 14, 1, 1);
-        ctx.fillRect(x + 26, y + 4, 1, 1);
     }
 
     drawWaterEdgeTop(ctx, x, y, T) {
@@ -4223,8 +4188,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawBenchOutdoor(ctx, x, y, T) {
-        // 3D Isometric outdoor bench
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric outdoor bench — transparent background
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.fillRect(x + 4, y + 22, 26, 7);
@@ -4263,8 +4227,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawLamppost(ctx, x, y, T) {
-        // 3D Isometric lamppost
-        this.drawGrassBase(ctx, x, y, T);
+        // 3D Isometric lamppost — transparent background
         // Shadow
         ctx.fillStyle = 'rgba(0,0,0,0.15)';
         ctx.beginPath(); ctx.ellipse(x + 16, y + 30, 6, 2.5, 0, 0, Math.PI * 2); ctx.fill();
@@ -4831,7 +4794,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawFountainBase(ctx, x, y, T) {
-        this.drawGrassBase(ctx, x, y, T);
+        // Transparent background — ground layer shows through
         // Drop shadow
         ctx.fillStyle = 'rgba(0,0,0,0.18)';
         ctx.beginPath(); ctx.ellipse(x + 16, y + 28, 15, 6, 0, 0, Math.PI * 2); ctx.fill();
