@@ -150,14 +150,19 @@ function ScreenShareWindow({ stream }) {
     const [pos, setPos] = useState(null);
     const dragging = useRef(null);
 
-    // Initialize position on mount
+    // Initialize position top-left (below HUD bar)
     useEffect(() => {
-        setPos({ x: window.innerWidth - 436, y: window.innerHeight - 360 });
+        setPos({ x: 16, y: 60 });
     }, []);
 
     useEffect(() => {
-        if (videoRef.current && stream) {
-            videoRef.current.srcObject = stream;
+        const el = videoRef.current;
+        if (el && stream) {
+            el.srcObject = stream;
+            el.play().catch(() => {
+                el.muted = true;
+                el.play().catch(() => {});
+            });
         }
     }, [stream]);
 
