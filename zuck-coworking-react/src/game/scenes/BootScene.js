@@ -3161,44 +3161,34 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawLilyPad(ctx, x, y, T) {
-        // Water base harmonized with deep water
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Water sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.3)';
-        ctx.fillRect(x + 4, y + 6, 1, 1);
-        ctx.fillRect(x + 26, y + 24, 1, 1);
-        // Shadow under lily pad
-        ctx.fillStyle = 'rgba(0,40,60,0.2)';
-        ctx.fillRect(x + 10, y + 17, 12, 6);
-        // Lily pad (oval 12x8 using pixel art)
-        // Dark green outline
+        // TRANSPARENT background — ground layer already has water beneath
+        // Only draw the lily pad and flower (no opaque water fill)
+        // Shadow under pad
+        ctx.fillStyle = 'rgba(0,40,60,0.15)';
+        ctx.fillRect(x + 10, y + 17, 12, 5);
+        // Lily pad oval — dark green outline
         ctx.fillStyle = '#2d7018';
-        ctx.fillRect(x + 12, y + 12, 8, 1);  // top edge
-        ctx.fillRect(x + 11, y + 13, 1, 1);   // top-left curve
-        ctx.fillRect(x + 20, y + 13, 1, 1);   // top-right curve
-        ctx.fillRect(x + 10, y + 14, 1, 4);   // left edge
-        ctx.fillRect(x + 21, y + 14, 1, 4);   // right edge
-        ctx.fillRect(x + 11, y + 18, 1, 1);   // bottom-left curve
-        ctx.fillRect(x + 20, y + 18, 1, 1);   // bottom-right curve
-        ctx.fillRect(x + 12, y + 19, 8, 1);   // bottom edge
-        // Pad fill (bright green)
+        ctx.fillRect(x + 12, y + 12, 8, 1);
+        ctx.fillRect(x + 11, y + 13, 1, 1);
+        ctx.fillRect(x + 20, y + 13, 1, 1);
+        ctx.fillRect(x + 10, y + 14, 1, 4);
+        ctx.fillRect(x + 21, y + 14, 1, 4);
+        ctx.fillRect(x + 11, y + 18, 1, 1);
+        ctx.fillRect(x + 20, y + 18, 1, 1);
+        ctx.fillRect(x + 12, y + 19, 8, 1);
+        // Pad fill
         ctx.fillStyle = '#4aaa28';
         ctx.fillRect(x + 12, y + 13, 8, 6);
         ctx.fillRect(x + 11, y + 14, 10, 4);
-        // Pad highlight (lighter green, top-left)
+        // Highlight
         ctx.fillStyle = '#5abb38';
         ctx.fillRect(x + 12, y + 13, 5, 3);
         ctx.fillRect(x + 11, y + 14, 4, 2);
-        // Pad vein lines
+        // Veins
         ctx.fillStyle = 'rgba(30,80,15,0.3)';
-        ctx.fillRect(x + 15, y + 13, 1, 6);  // center vein
-        ctx.fillRect(x + 13, y + 15, 6, 1);  // cross vein
-        // Notch (V-shape opening to right)
-        ctx.fillStyle = '#2980b9';
-        ctx.fillRect(x + 16, y + 15, 5, 1);
-        ctx.fillRect(x + 17, y + 14, 4, 1);
-        ctx.fillRect(x + 18, y + 16, 3, 1);
-        // Small pink flower (3px circle)
+        ctx.fillRect(x + 15, y + 13, 1, 6);
+        ctx.fillRect(x + 13, y + 15, 6, 1);
+        // Pink flower
         ctx.fillStyle = '#ec4899';
         ctx.fillRect(x + 13, y + 13, 3, 1);
         ctx.fillRect(x + 12, y + 14, 1, 1);
@@ -3206,7 +3196,7 @@ export class BootScene extends Phaser.Scene {
         ctx.fillRect(x + 13, y + 15, 3, 1);
         ctx.fillRect(x + 14, y + 12, 1, 1);
         ctx.fillRect(x + 14, y + 16, 1, 1);
-        // Flower center (yellow)
+        // Yellow center
         ctx.fillStyle = '#fbbf24';
         ctx.fillRect(x + 13, y + 14, 2, 1);
         ctx.fillRect(x + 14, y + 13, 1, 1);
