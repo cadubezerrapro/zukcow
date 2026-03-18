@@ -279,6 +279,12 @@ export class OfficeScene extends Phaser.Scene {
         this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.physics.add.collider(this.player, this.wallsLayer);
 
+        // Enable collision on furniture_front layer (bottom tiles of 2x2 furniture)
+        if (this.frontLayer) {
+            this.frontLayer.setCollisionByExclusion([0, -1]);
+            this.physics.add.collider(this.player, this.frontLayer);
+        }
+
         this.createAnimations(this.avatarColor);
 
         // Name label with inline green dot

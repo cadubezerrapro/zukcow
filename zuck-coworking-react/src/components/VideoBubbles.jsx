@@ -63,10 +63,16 @@ function VideoTile({ stream, name, isLocal, hasVideo }) {
     const isSpeaking = useSpeaking(stream);
 
     useEffect(() => {
-        if (videoRef.current && stream) {
-            videoRef.current.srcObject = stream;
+        const el = videoRef.current;
+        if (el && stream) {
+            el.srcObject = stream;
+            el.play().catch(() => {
+                // Autoplay blocked by browser — retry muted
+                el.muted = true;
+                el.play().catch(() => {});
+            });
         }
-    }, [stream]);
+    }, [stream, hasVideo]);
 
     // Dynamic sizing: small circle for avatar, larger rect for video
     const size = hasVideo ? { w: 140, h: 105 } : { w: 56, h: 56 };

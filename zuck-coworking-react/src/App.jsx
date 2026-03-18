@@ -40,6 +40,7 @@ export default function App() {
     const peersRef = useRef({});
     const peerMetaRef = useRef({}); // { [peerId]: { makingOffer: bool } }
     const [remoteStreams, setRemoteStreams] = useState({});
+    const [, setRemoteStreamVersion] = useState(0); // force re-render on new tracks
 
     // Seat state
     const [nearSeat, setNearSeat] = useState(false);
@@ -345,7 +346,12 @@ export default function App() {
 
         // Handle remote tracks
         pc.ontrack = (event) => {
-            setRemoteStreams(prev => ({ ...prev, [peerId]: event.streams[0] }));
+            const stream = event.streams[0];
+            if (stream) {
+                setRemoteStreams(prev => ({ ...prev, [peerId]: stream }));
+                // Force re-render even if same stream reference (new track added)
+                setRemoteStreamVersion(v => v + 1);
+            }
         };
 
         // ICE candidates
