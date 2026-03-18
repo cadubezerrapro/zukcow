@@ -824,12 +824,10 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show kart sprite + small driver head in cockpit
+            // Remote player in kart: show small player + kart sprite
             if (rp.isInKart) {
                 rp.sprite.setVisible(true);
-                rp.sprite.setScale(0.9);
-                rp.sprite.setCrop(0, 0, 32, 18);
-                rp.sprite.setOrigin(0.5, 0.35);
+                rp.sprite.setScale(0.7);
                 rp.sprite.setDepth(12);
                 // Create kart sprite if not yet
                 if (!rp.kartGfx) {
@@ -1052,12 +1050,10 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Show player as small driver inside kart cockpit
+            // Show player as small driver inside kart
             this.player.setVisible(true);
-            this.player.setScale(0.9);
-            this.player.setCrop(0, 0, 32, 18); // show only head
-            this.player.setOrigin(0.5, 0.35); // shift anchor up so head sits in cockpit
-            this.player.setDepth(12); // above kart
+            this.player.setScale(0.7);
+            this.player.setDepth(12);
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
@@ -1282,11 +1278,11 @@ export class OfficeScene extends Phaser.Scene {
                 const dir = this.playerDirection;
                 let sx = this.player.x;
                 let sy = this.player.y;
-                // Position behind the kart exhaust (opposite of movement)
-                if (dir === 'up') sy += 42;
-                else if (dir === 'down') sy -= 42;
-                else if (dir === 'left') sx += 42;
-                else if (dir === 'right') sx -= 42;
+                // Position exhaust behind the kart (opposite of movement direction)
+                if (dir === 'down') sy += 42;
+                else if (dir === 'up') sy -= 42;
+                else if (dir === 'right') sx += 42;
+                else if (dir === 'left') sx -= 42;
                 sx += (Math.random() - 0.5) * 20;
                 sy += (Math.random() - 0.5) * 20;
                 const size = 6 + Math.random() * 6;
