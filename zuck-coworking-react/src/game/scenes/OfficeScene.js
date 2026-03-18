@@ -219,7 +219,12 @@ export class OfficeScene extends Phaser.Scene {
                 } else if (edit.type === 'place') {
                     targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
-                    if (tile && edit.rotation) tile.rotation = edit.rotation;
+                    if (tile) {
+                        if (edit.rotation) tile.rotation = edit.rotation;
+                        // Placed furniture needs collision enabled
+                        const NON_COLLIDE_IDS = [4, 34, 39, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40];
+                        if (!NON_COLLIDE_IDS.includes(edit.tileId)) tile.setCollision(true);
+                    }
                 }
             });
         } catch (e) {
@@ -252,7 +257,10 @@ export class OfficeScene extends Phaser.Scene {
             } else if (edit.type === 'place') {
                 targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                 const tile = targetLayer.getTileAt(edit.x, edit.y);
-                if (tile && edit.rotation) tile.rotation = edit.rotation;
+                if (tile) {
+                    if (edit.rotation) tile.rotation = edit.rotation;
+                    tile.setCollision(true);
+                }
             } else if (edit.type === 'rotate') {
                 const tile = targetLayer.getTileAt(edit.x, edit.y);
                 if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
@@ -539,7 +547,8 @@ export class OfficeScene extends Phaser.Scene {
                 if (tileXY) {
                     const existing = this.wallsLayer.getTileAt(tileXY.x, tileXY.y);
                     if (!existing || existing.index <= 0) {
-                        this.wallsLayer.putTileAt(this.movingFurniture.tileId, tileXY.x, tileXY.y);
+                        const placed = this.wallsLayer.putTileAt(this.movingFurniture.tileId, tileXY.x, tileXY.y);
+                        if (placed) placed.setCollision(true);
                         this.saveMapEdit({ type: 'place', x: tileXY.x, y: tileXY.y, tileId: this.movingFurniture.tileId });
                     }
                 }
@@ -997,7 +1006,6 @@ export class OfficeScene extends Phaser.Scene {
         // Range ±2 to compensate for collision stopping player before adjacent tile
         for (let dy = -2; dy <= 2; dy++) {
             for (let dx = -2; dx <= 2; dx++) {
-                if (dx === 0 && dy === 0) continue;
                 const checkX = tileX + dx;
                 const checkY = tileY + dy;
                 if (this.wallsLayer) {
