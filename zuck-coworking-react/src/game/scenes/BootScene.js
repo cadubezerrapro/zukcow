@@ -2936,84 +2936,63 @@ export class BootScene extends Phaser.Scene {
 
     drawWaterEdgeTop(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y, T, 4);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + 3, y + 1, 2, 2); ctx.fillRect(x + 14, y, 2, 2); ctx.fillRect(x + 26, y + 1, 2, 2);
+        // Just 1px sand shore line at top edge
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x, y + 4, T, 1);
+        ctx.fillRect(x, y, T, 1);
+        ctx.fillStyle = 'rgba(235,245,251,0.3)';
+        ctx.fillRect(x, y + 1, T, 1);
     }
 
     drawWaterEdgeBottom(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y + T - 4, T, 4);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + 5, y + T - 3, 2, 2); ctx.fillRect(x + 18, y + T - 2, 2, 2); ctx.fillRect(x + 28, y + T - 3, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x, y + T - 5, T, 1);
+        ctx.fillRect(x, y + T - 1, T, 1);
+        ctx.fillStyle = 'rgba(235,245,251,0.3)';
+        ctx.fillRect(x, y + T - 2, T, 1);
     }
 
     drawWaterEdgeLeft(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + 1, y + 4, 2, 2); ctx.fillRect(x, y + 16, 2, 2); ctx.fillRect(x + 1, y + 26, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x + 4, y, 1, T);
+        ctx.fillRect(x, y, 1, T);
+        ctx.fillStyle = 'rgba(235,245,251,0.3)';
+        ctx.fillRect(x + 1, y, 1, T);
     }
 
     drawWaterEdgeRight(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + T - 3, y + 6, 2, 2); ctx.fillRect(x + T - 2, y + 18, 2, 2); ctx.fillRect(x + T - 3, y + 28, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x + T - 5, y, 1, T);
+        ctx.fillRect(x + T - 1, y, 1, T);
+        ctx.fillStyle = 'rgba(235,245,251,0.3)';
+        ctx.fillRect(x + T - 2, y, 1, T);
     }
 
     drawWaterCornerTL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y, T, 4);
-        ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + 1, y + 1, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x + 4, y + 4, 1, 1);
+        ctx.fillRect(x, y, T, 1);
+        ctx.fillRect(x, y, 1, T);
     }
 
     drawWaterCornerTR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y, T, 4);
-        ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + T - 3, y + 1, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x + T - 5, y + 4, 1, 1);
+        ctx.fillRect(x, y, T, 1);
+        ctx.fillRect(x + T - 1, y, 1, T);
     }
 
     drawWaterCornerBL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y + T - 4, T, 4);
-        ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + 1, y + T - 3, 2, 2);
         ctx.fillStyle = '#c4a876';
-        ctx.fillRect(x + 4, y + T - 5, 1, 1);
+        ctx.fillRect(x, y + T - 1, T, 1);
+        ctx.fillRect(x, y, 1, T);
     }
 
     drawWaterCornerBR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x, y + T - 4, T, 4);
-        ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#4a9028';
-        ctx.fillRect(x + T - 3, y + T - 3, 2, 2);
+        ctx.fillStyle = '#c4a876';
+        ctx.fillRect(x, y + T - 1, T, 1);
+        ctx.fillRect(x + T - 1, y, 1, T);
         ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + T - 5, y + T - 5, 1, 1);
     }

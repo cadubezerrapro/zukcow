@@ -355,7 +355,6 @@ const flowerPositions = [
 ];
 for (const [r, c] of flowerPositions) {
   setTile(walls, GID.FLOWER_BED, r, c);
-  setTile(ground, GID.GRASS_LIGHT, r, c);
 }
 
 // Fountain at cols 35-36, rows 4-5
@@ -368,8 +367,21 @@ setTile(ground, GID.STONE_PATH, 4, 36);
 setTile(ground, GID.STONE_PATH, 5, 35);
 setTile(ground, GID.STONE_PATH, 5, 36);
 
-// Lake top-right (rows 2-7, cols 55-70) — all deep water, no edge tiles
+// Lake top-right (rows 2-7, cols 55-70)
 fillRect(ground, GID.WATER_DEEP, 2, 55, 7, 70);
+// Edge tiles (thin sand border, no grass)
+for (let c = 56; c <= 69; c++) {
+  setTile(ground, GID.WATER_EDGE_TOP, 2, c);
+  setTile(ground, GID.WATER_EDGE_BOTTOM, 7, c);
+}
+for (let r = 3; r <= 6; r++) {
+  setTile(ground, GID.WATER_EDGE_LEFT, r, 55);
+  setTile(ground, GID.WATER_EDGE_RIGHT, r, 70);
+}
+setTile(ground, GID.WATER_CORNER_TL, 2, 55);
+setTile(ground, GID.WATER_CORNER_TR, 2, 70);
+setTile(ground, GID.WATER_CORNER_BL, 7, 55);
+setTile(ground, GID.WATER_CORNER_BR, 7, 70);
 // Lily pads
 setTile(walls, GID.LILY_PAD, 4, 60);
 setTile(walls, GID.LILY_PAD, 5, 63);
@@ -782,8 +794,20 @@ for (let c = 42; c <= 58; c += 4) {
   fillRect(ground, GID.STONE_PATH, 45, c, 50, c);
 }
 
-// Second small pond (rows 48-52, cols 11-17) — all deep water
+// Second small pond (rows 48-52, cols 11-17)
 fillRect(ground, GID.WATER_DEEP, 48, 11, 52, 17);
+for (let c = 12; c <= 16; c++) {
+  setTile(ground, GID.WATER_EDGE_TOP, 48, c);
+  setTile(ground, GID.WATER_EDGE_BOTTOM, 52, c);
+}
+for (let r = 49; r <= 51; r++) {
+  setTile(ground, GID.WATER_EDGE_LEFT, r, 11);
+  setTile(ground, GID.WATER_EDGE_RIGHT, r, 17);
+}
+setTile(ground, GID.WATER_CORNER_TL, 48, 11);
+setTile(ground, GID.WATER_CORNER_TR, 48, 17);
+setTile(ground, GID.WATER_CORNER_BL, 52, 11);
+setTile(ground, GID.WATER_CORNER_BR, 52, 17);
 // Lily pads
 setTile(walls, GID.LILY_PAD, 50, 13);
 setTile(walls, GID.LILY_PAD, 49, 15);
