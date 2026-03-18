@@ -678,9 +678,9 @@ export class OfficeScene extends Phaser.Scene {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
         }
 
-        // Update kart visual + smoke
+        // Update kart visual + smoke (kart centered on body, player shifted up)
         if (this.isInKart && this.kartSprite) {
-            this._drawKartGraphics(this.kartSprite, this.player.x, this.player.y);
+            this._drawKartGraphics(this.kartSprite, this.player.x, this.player.y + 14);
             this._updateKartSmoke(vx !== 0 || vy !== 0);
         }
     }
@@ -1000,10 +1000,14 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Squish to show only head+torso above kart cockpit
-            this.player.setScale(2, 1.2);
-            this.player.setOffset(6, 44);
+            // Show only head+torso: crop bottom half of sprite, shift up into cockpit
+            this.player.setScale(2, 2);
+            this.player.setOffset(6, 36);
             this.player.setDepth(11);
+            // Crop: sprite frames are 32x48. Show top 28px (head+torso), hide legs
+            this.player.setCrop(0, 0, 32, 28);
+            // Shift player up so head sits nicely in cockpit
+            this.player.y = py - 14;
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
@@ -1045,10 +1049,11 @@ export class OfficeScene extends Phaser.Scene {
         this.currentSeat = null;
         this.isInKart = false;
 
-        // Restore normal scale, offset, and depth
+        // Restore normal scale, offset, depth, and crop
         this.player.setScale(2, 2);
         this.player.setOffset(6, 36);
         this.player.setDepth(10);
+        this.player.setCrop(); // remove crop, show full sprite
 
         if (wasInKart) {
             // Destroy kart visual + smoke
