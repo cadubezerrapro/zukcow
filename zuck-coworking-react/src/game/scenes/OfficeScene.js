@@ -1128,6 +1128,10 @@ export class OfficeScene extends Phaser.Scene {
             this.kartSmokeParticles = [];
         } else {
             // Regular seat: disable collision, squish sprite
+            // Temporarily remove tile collision so player can sit inside the tile
+            const seatTile = this.wallsLayer.getTileAt(seatInfo.tileX, seatInfo.tileY);
+            if (seatTile) seatTile.setCollision(false);
+            this._seatTile = seatTile;
             if (this.player.body) {
                 this.player.body.checkCollision.none = true;
                 this.player.body.reset(px, py);
@@ -1184,11 +1188,16 @@ export class OfficeScene extends Phaser.Scene {
             // Step off the kart
             this.player.y -= TILE_SIZE;
         } else {
-            // Re-enable collision (kart never disabled it)
+            // Re-enable collision
             if (this.player.body) {
                 this.player.body.checkCollision.none = false;
             }
-            // Move AWAY from desk to avoid clipping into it
+            // Restore seat tile collision
+            if (this._seatTile) {
+                this._seatTile.setCollision(true);
+                this._seatTile = null;
+            }
+            // Move AWAY from seat to avoid clipping
             const dir = seat?.faceDirection || 'down';
             if (dir === 'up') this.player.y += TILE_SIZE;
             else if (dir === 'down') this.player.y -= TILE_SIZE;
