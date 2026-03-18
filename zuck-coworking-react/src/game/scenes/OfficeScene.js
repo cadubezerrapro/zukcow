@@ -684,8 +684,8 @@ export class OfficeScene extends Phaser.Scene {
         // Update kart sprite position + rotation to follow player direction
         if (this.isInKart && this.kartSprite) {
             this.kartSprite.setPosition(this.player.x, this.player.y);
-            // Rotate kart based on direction (tile faces down by default)
-            const dirAngles = { down: 0, left: Math.PI / 2, up: Math.PI, right: -Math.PI / 2 };
+            // Rotate kart based on direction (tile faces UP by default)
+            const dirAngles = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 };
             this.kartSprite.setRotation(dirAngles[this.playerDirection] || 0);
             // Smoke exhaust effect
             this._updateKartSmoke(vx !== 0 || vy !== 0);
@@ -858,7 +858,7 @@ export class OfficeScene extends Phaser.Scene {
                     rp.sprite.y = rp.targetY;
                 }
                 rp.kartGfx.setPosition(rp.sprite.x, rp.sprite.y);
-                const dirAngles = { down: 0, left: Math.PI / 2, up: Math.PI, right: -Math.PI / 2 };
+                const dirAngles = { up: 0, right: Math.PI / 2, down: Math.PI, left: -Math.PI / 2 };
                 rp.kartGfx.setRotation(dirAngles[rp.targetDirection] || 0);
             } else {
                 // Not in kart: destroy kart sprite if it existed
