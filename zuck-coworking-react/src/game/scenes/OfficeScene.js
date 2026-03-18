@@ -663,8 +663,10 @@ export class OfficeScene extends Phaser.Scene {
             // Apply visual offset (negative = up)
             this.player.y += this.jumpOffset;
             this._jumpApplied = this.jumpOffset;
-            // Move name label with jump
+            // Move name label + green dot with jump
             this.playerNameLabel.y += this.jumpOffset;
+            this.onlineDotOverlay.y += this.jumpOffset;
+            this.onlineDotGlow.y += this.jumpOffset;
         } else if (this.jumpShadow) {
             this.jumpShadow.setVisible(false);
         }
