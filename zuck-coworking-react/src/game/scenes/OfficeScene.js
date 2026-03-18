@@ -426,10 +426,6 @@ export class OfficeScene extends Phaser.Scene {
             const STRUCTURE_GIDS = new Set([
                 // Floors (GID 1-15): hallway, office, workspace, lounge, meeting, etc
                 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-                // Wall outer variants (GID 1, 20-21)
-                20, 21,
-                // Wall/corner structure (GID 41-52)
-                41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
                 // Water tiles (GID 53-64)
                 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
                 // Outdoor ground (GID 65-66, 73-76)
