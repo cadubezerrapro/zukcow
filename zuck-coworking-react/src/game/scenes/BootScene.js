@@ -4834,19 +4834,19 @@ export class BootScene extends Phaser.Scene {
     // ==========================================
 
     drawWaterFrame0(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276');
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawWaterFrame1(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276');
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawWaterFrame2(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276');
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawWaterFrame3(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276');
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawAquariumFrame1(ctx, x, y, T) {
