@@ -1102,92 +1102,95 @@ export class OfficeScene extends Phaser.Scene {
 
     _drawKartGraphics(gfx, cx, cy) {
         gfx.clear();
-        // Kart centered on player, shifted down so player sits in cockpit
+        // cx, cy = player sprite center
+        // Kart 64w x 70h. Cockpit centered on (cx, cy).
         const x = cx - 32;
-        const y = cy - 16; // shifted down so cockpit is at player center
+        const y = cy - 35;  // cockpit center at y+35 = cy
         // Shadow
-        gfx.fillStyle(0x000000, 0.25);
-        gfx.fillEllipse(cx, y + 60, 60, 16);
+        gfx.fillStyle(0x000000, 0.3);
+        gfx.fillEllipse(cx, y + 72, 64, 14);
         // Back wheels
         gfx.fillStyle(0x1a1a2e, 1);
-        gfx.fillRect(x + 4, y + 46, 12, 14);
-        gfx.fillRect(x + 48, y + 46, 12, 14);
+        gfx.fillRect(x + 2, y + 54, 12, 14);
+        gfx.fillRect(x + 50, y + 54, 12, 14);
         gfx.fillStyle(0x3a3a5e, 1);
-        gfx.fillRect(x + 6, y + 48, 8, 4);
-        gfx.fillRect(x + 50, y + 48, 8, 4);
+        gfx.fillRect(x + 4, y + 57, 8, 4);
+        gfx.fillRect(x + 52, y + 57, 8, 4);
         // Body (red)
         gfx.fillStyle(0xdc2626, 1);
-        gfx.fillRect(x + 10, y + 22, 44, 36);
-        gfx.fillRect(x + 14, y + 18, 36, 4);
-        // Darker side/bottom
+        gfx.fillRect(x + 8, y + 12, 48, 54);
+        gfx.fillRect(x + 12, y + 8, 40, 4);
+        // Darker bottom/side
         gfx.fillStyle(0xb91c1c, 1);
-        gfx.fillRect(x + 10, y + 46, 44, 10);
-        gfx.fillRect(x + 50, y + 22, 4, 34);
-        // Cockpit (open area where player sits)
+        gfx.fillRect(x + 8, y + 54, 48, 12);
+        gfx.fillRect(x + 52, y + 12, 4, 54);
+        // Cockpit — center at (cx, cy) → from y+25 to y+45
         gfx.fillStyle(0x1e293b, 1);
-        gfx.fillRect(x + 16, y + 26, 32, 20);
+        gfx.fillRect(x + 14, y + 23, 36, 24);
         gfx.fillStyle(0x334155, 1);
-        gfx.fillRect(x + 18, y + 28, 28, 16);
+        gfx.fillRect(x + 16, y + 25, 32, 20);
         // Steering wheel
         gfx.fillStyle(0x6b7280, 1);
-        gfx.fillRect(x + 28, y + 22, 8, 4);
-        gfx.fillStyle(0x1a1a2e, 1);
-        gfx.fillRect(x + 30, y + 20, 4, 4);
+        gfx.fillRect(x + 26, y + 12, 12, 5);
+        gfx.fillStyle(0x4b5563, 1);
+        gfx.fillRect(x + 30, y + 10, 4, 4);
         // Front wheels
         gfx.fillStyle(0x1a1a2e, 1);
-        gfx.fillRect(x + 8, y + 18, 8, 8);
-        gfx.fillRect(x + 48, y + 18, 8, 8);
+        gfx.fillRect(x + 4, y + 8, 10, 10);
+        gfx.fillRect(x + 50, y + 8, 10, 10);
         gfx.fillStyle(0x3a3a5e, 1);
-        gfx.fillRect(x + 10, y + 20, 4, 4);
-        gfx.fillRect(x + 50, y + 20, 4, 4);
+        gfx.fillRect(x + 6, y + 10, 6, 4);
+        gfx.fillRect(x + 52, y + 10, 6, 4);
         // Racing stripe
         gfx.fillStyle(0xf8fafc, 1);
-        gfx.fillRect(x + 30, y + 18, 4, 40);
+        gfx.fillRect(x + 30, y + 8, 4, 60);
         // Headlights
         gfx.fillStyle(0xfde047, 1);
-        gfx.fillRect(x + 16, y + 18, 6, 3);
-        gfx.fillRect(x + 42, y + 18, 6, 3);
+        gfx.fillRect(x + 14, y + 8, 6, 3);
+        gfx.fillRect(x + 44, y + 8, 6, 3);
+        // Taillights
+        gfx.fillStyle(0xff4444, 1);
+        gfx.fillRect(x + 14, y + 64, 4, 3);
+        gfx.fillRect(x + 46, y + 64, 4, 3);
         // Exhaust pipes
         gfx.fillStyle(0x6b7280, 1);
-        gfx.fillRect(x + 22, y + 56, 6, 4);
-        gfx.fillRect(x + 36, y + 56, 6, 4);
+        gfx.fillRect(x + 22, y + 66, 6, 4);
+        gfx.fillRect(x + 36, y + 66, 6, 4);
     }
 
     _updateKartSmoke(isMoving) {
         if (!this.kartSmokeParticles) return;
-        // Spawn smoke puffs when moving
+        // Spawn big smoke puffs when moving
         if (isMoving) {
-            // Spawn 2 puffs per frame for thick smoke
-            for (let n = 0; n < 2; n++) {
-                if (this.kartSmokeParticles.length >= 15) break;
+            for (let n = 0; n < 3; n++) {
+                if (this.kartSmokeParticles.length >= 20) break;
                 const dir = this.playerDirection;
                 let sx = this.player.x;
                 let sy = this.player.y;
-                // Position behind the kart exhaust
-                if (dir === 'up') sy += 38;
-                else if (dir === 'down') sy -= 38;
-                else if (dir === 'left') sx += 38;
-                else if (dir === 'right') sx -= 38;
-                sx += (Math.random() - 0.5) * 16;
-                sy += (Math.random() - 0.5) * 16;
-                const size = 4 + Math.random() * 4;
-                const puff = this.add.circle(sx, sy, size, 0xaaaaaa, 0.6);
+                // Position behind the kart exhaust (opposite of movement)
+                if (dir === 'up') sy += 42;
+                else if (dir === 'down') sy -= 42;
+                else if (dir === 'left') sx += 42;
+                else if (dir === 'right') sx -= 42;
+                sx += (Math.random() - 0.5) * 20;
+                sy += (Math.random() - 0.5) * 20;
+                const size = 6 + Math.random() * 6;
+                const puff = this.add.circle(sx, sy, size, 0xbbbbbb, 0.7);
                 puff.setDepth(8);
                 puff._life = 0;
-                puff._maxLife = 15 + Math.random() * 10;
+                puff._maxLife = 20 + Math.random() * 15;
                 this.kartSmokeParticles.push(puff);
             }
         }
-        // Update existing particles — rise and fade
+        // Update — grow, rise, fade
         for (let i = this.kartSmokeParticles.length - 1; i >= 0; i--) {
             const p = this.kartSmokeParticles[i];
             p._life += 1;
             const t = p._life / p._maxLife;
-            p.setAlpha(0.6 * (1 - t));
-            p.setScale(1 + t * 1.5);
-            p.y -= 1;
-            // Drift sideways slightly
-            p.x += (Math.random() - 0.5) * 0.5;
+            p.setAlpha(0.7 * (1 - t));
+            p.setScale(1 + t * 2.5);
+            p.y -= 1.5;
+            p.x += (Math.random() - 0.5) * 1;
             if (p._life >= p._maxLife) {
                 p.destroy();
                 this.kartSmokeParticles.splice(i, 1);
