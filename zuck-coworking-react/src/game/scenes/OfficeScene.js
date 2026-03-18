@@ -669,7 +669,10 @@ export class OfficeScene extends Phaser.Scene {
         this.player.setVelocity(vx, vy);
 
         const animKey = `char_${this.avatarColor}`;
-        if (vx !== 0 || vy !== 0) {
+        if (this.isInKart) {
+            // In kart: always idle (no walking legs), face movement direction
+            this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
+        } else if (vx !== 0 || vy !== 0) {
             this.player.anims.play(`${animKey}_walk_${this.playerDirection}`, true);
         } else {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
@@ -997,9 +1000,9 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Slightly smaller to show "riding", above kart sprite
-            this.player.setScale(2, 1.5);
-            this.player.setOffset(6, 42);
+            // Squish to show only head+torso above kart cockpit
+            this.player.setScale(2, 1.2);
+            this.player.setOffset(6, 44);
             this.player.setDepth(11);
             // Remove the kart tile from the map
             if (this.wallsLayer) {
