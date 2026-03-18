@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { createGatherGame } from './game/GatherGame';
 import eventBus from './utils/eventBus';
 import sseService from './services/sse';
-import { joinSpace, leaveSpace, updatePosition, heartbeat, setDisplayName, sendSignal, lockRoom, unlockRoom, getLocalUserId } from './services/api';
+import { joinSpace, leaveSpace, heartbeat, setDisplayName, sendSignal, lockRoom, unlockRoom, getLocalUserId } from './services/api';
 import HUD from './components/HUD';
 import UserList from './components/UserList';
 import WelcomeModal from './components/WelcomeModal';
@@ -204,9 +204,8 @@ export default function App() {
             }
         });
 
-        const unsubMoved = eventBus.on('player:moved', ({ x, y, direction, is_sitting, is_in_kart }) => {
-            updatePosition(x, y, direction, currentRoomRef.current, is_sitting, is_in_kart).catch(() => {});
-        });
+        // Position updates are now sent via combined poll in sseService (no separate API call)
+        const unsubMoved = eventBus.on('player:moved', () => {});
 
         const unsubPos = eventBus.on('player:position', (pos) => {
             setPlayerPos(pos);

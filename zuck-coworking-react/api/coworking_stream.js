@@ -7,9 +7,23 @@ const redis = new Redis({
 
 const HEARTBEAT_TTL = 30;
 
+function parseBody(req) {
+    if (req.method === 'POST') {
+        if (typeof req.body === 'string') {
+            const params = new URLSearchParams(req.body);
+            const obj = {};
+            for (const [k, v] of params) obj[k] = v;
+            return obj;
+        }
+        return req.body || {};
+    }
+    return {};
+}
+
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-User-Id, X-User-Name');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -22,6 +36,27 @@ export default async function handler(req, res) {
 
     try {
         const now = Date.now();
+
+        // If POST with position data, update position in Redis first
+        if (req.method === 'POST') {
+            const body = parseBody(req);
+            if (body.x !== undefined && body.y !== undefined) {
+                const raw = await redis.hget(`cowork:space:${spaceId}:users`, userId);
+                if (raw) {
+                    const user = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    if (user.is_online) {
+                        user.x = parseInt(body.x);
+                        user.y = parseInt(body.y);
+                        user.direction = body.direction || user.direction;
+                        user.current_room = body.current_room || null;
+                        user.is_sitting = body.is_sitting === '1';
+                        user.is_in_kart = body.is_in_kart === '1';
+                        user.last_heartbeat = now;
+                        await redis.hset(`cowork:space:${spaceId}:users`, { [userId]: JSON.stringify(user) });
+                    }
+                }
+            }
+        }
 
         // Get online users
         const allUsers = await redis.hgetall(`cowork:space:${spaceId}:users`) || {};

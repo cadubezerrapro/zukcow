@@ -12,6 +12,12 @@ class SSEService {
         this.maxReconnectAttempts = 10;
         this.reconnectDelay = 1000;
         this.spaceId = 1;
+        this._pendingPosition = null;
+    }
+
+    // Called by the game scene to queue position for next poll
+    setLocalPosition(x, y, direction, currentRoom, isSitting, isInKart) {
+        this._pendingPosition = { x, y, direction, current_room: currentRoom, is_sitting: isSitting, is_in_kart: isInKart };
     }
 
     connect(spaceId = 1) {
@@ -19,10 +25,8 @@ class SSEService {
         this.disconnect();
 
         if (isVercel) {
-            // Use polling on Vercel (serverless doesn't support SSE well)
             this.startPolling(spaceId);
         } else {
-            // Use SSE on Hostinger
             this.startSSE(spaceId);
         }
     }
@@ -34,9 +38,34 @@ class SSEService {
         const poll = async () => {
             try {
                 const userId = getLocalUserId();
-                const response = await fetch(`${SSE_URL}?space_id=${spaceId}&user_id=${userId}`, {
-                    headers: { 'X-User-Id': userId }
-                });
+                const pos = this._pendingPosition;
+                let response;
+
+                if (pos) {
+                    // Combined request: send position + get all players
+                    this._pendingPosition = null;
+                    const params = new URLSearchParams();
+                    params.append('x', Math.round(pos.x));
+                    params.append('y', Math.round(pos.y));
+                    params.append('direction', pos.direction || 'down');
+                    if (pos.current_room) params.append('current_room', pos.current_room);
+                    params.append('is_sitting', pos.is_sitting ? '1' : '0');
+                    params.append('is_in_kart', pos.is_in_kart ? '1' : '0');
+
+                    response = await fetch(`${SSE_URL}?space_id=${spaceId}&user_id=${userId}`, {
+                        method: 'POST',
+                        headers: {
+                            'X-User-Id': userId,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: params.toString()
+                    });
+                } else {
+                    // Just poll for updates
+                    response = await fetch(`${SSE_URL}?space_id=${spaceId}&user_id=${userId}`, {
+                        headers: { 'X-User-Id': userId }
+                    });
+                }
 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -50,7 +79,6 @@ class SSEService {
                     });
                 }
 
-                // Emit connected on every successful poll
                 if (!this._pollConnected) {
                     this._pollConnected = true;
                     eventBus.emit('sse:connected');
@@ -71,9 +99,9 @@ class SSEService {
             }
         };
 
-        // Poll every 200ms for smoother multiplayer movement
+        // Poll every 500ms — interpolation handles smoothness
         poll();
-        this.pollInterval = setInterval(poll, 200);
+        this.pollInterval = setInterval(poll, 500);
     }
 
     startSSE(spaceId) {

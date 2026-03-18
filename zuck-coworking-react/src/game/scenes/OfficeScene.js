@@ -2,12 +2,13 @@ import Phaser from 'phaser';
 import eventBus from '../../utils/eventBus';
 import mapData from '../maps/default_office.json';
 import { sendFurnitureEdit, getFurnitureEdits } from '../../services/api';
+import sseService from '../../services/sse';
 
 const TILE_SIZE = 64;
 const PLAYER_SPEED = 320;
 const KART_SPEED = 640;
 const KART_GID = 181;
-const POSITION_SEND_INTERVAL = 100;
+const POSITION_SEND_INTERVAL = 250;
 const AVATAR_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gray'];
 
 const ROOM_ZONES = [
@@ -710,6 +711,8 @@ export class OfficeScene extends Phaser.Scene {
         this.lastSentPosition = { x, y, direction: dir, is_sitting: sitting };
         this.lastSendTime = time;
 
+        // Queue position for next combined poll (no separate API call)
+        sseService.setLocalPosition(x, y, dir, this.currentRoom, this.isSitting, this.isInKart);
         eventBus.emit('player:moved', { x, y, direction: dir, is_sitting: this.isSitting, is_in_kart: this.isInKart });
     }
 
