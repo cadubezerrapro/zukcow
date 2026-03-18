@@ -132,6 +132,19 @@ while (true) {
         $roomLocks[$lr['room_id']] = (int)$lr['locked_by'];
     }
 
+    // Auto-unlock rooms with < 2 occupants
+    foreach ($roomLocks as $rid => $lockedBy) {
+        $count = 0;
+        foreach ($players as $p) {
+            if (isset($p['current_room']) && $p['current_room'] === $rid) $count++;
+        }
+        if ($count < 2) {
+            $pdo->prepare("DELETE FROM coworking_room_locks WHERE space_id = :sid AND room_id = :rid")
+                ->execute([':sid' => $spaceId, ':rid' => $rid]);
+            unset($roomLocks[$rid]);
+        }
+    }
+
     // Only send update if state changed OR there are signals
     $stateHash = md5(json_encode($players) . json_encode($roomLocks));
     if ($stateHash !== $lastStateHash || !empty($signals)) {

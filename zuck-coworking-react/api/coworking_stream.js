@@ -111,6 +111,18 @@ export default async function handler(req, res) {
             roomLocks[roomId] = lock.locked_by;
         }
 
+        // Auto-unlock rooms with < 2 occupants
+        for (const [roomId] of Object.entries(roomLocks)) {
+            let count = 0;
+            for (const p of Object.values(players)) {
+                if (p.current_room === roomId) count++;
+            }
+            if (count < 2) {
+                await redis.hdel(`cowork:space:${spaceId}:locks`, roomId);
+                delete roomLocks[roomId];
+            }
+        }
+
         // Get furniture version
         const furnitureVersion = parseInt(await redis.get(`cowork:space:${spaceId}:furniture_version`) || '0');
 

@@ -27,6 +27,20 @@ const ROOM_ZONES = [
     { id: 'gameroom', name: 'Game Room', x1: 52, y1: 27, x2: 68, y2: 34 },
 ];
 
+const ROOM_DOORS = {
+    conferencia: [{ x: 9, y: 17 }, { x: 10, y: 17 }],
+    colaborativa: [{ x: 29, y: 17 }, { x: 30, y: 17 }],
+    escritorios: [{ x: 49, y: 17 }, { x: 50, y: 17 }],
+    servidor: [{ x: 63, y: 17 }, { x: 64, y: 17 }],
+    workspace_a: [{ x: 12, y: 19 }, { x: 13, y: 19 }, { x: 12, y: 25 }, { x: 13, y: 25 }],
+    workspace_b: [{ x: 37, y: 19 }, { x: 38, y: 19 }, { x: 37, y: 25 }, { x: 38, y: 25 }],
+    reuniao1: [{ x: 55, y: 19 }, { x: 56, y: 19 }],
+    reuniao2: [{ x: 64, y: 19 }, { x: 65, y: 19 }],
+    lounge: [{ x: 9, y: 27 }, { x: 10, y: 27 }, { x: 24, y: 27 }, { x: 25, y: 27 }],
+    descanso: [{ x: 40, y: 27 }, { x: 41, y: 27 }],
+    gameroom: [{ x: 59, y: 27 }, { x: 60, y: 27 }],
+};
+
 export class OfficeScene extends Phaser.Scene {
     constructor() {
         super({ key: 'OfficeScene' });
@@ -38,6 +52,7 @@ export class OfficeScene extends Phaser.Scene {
         this.isSitting = false;
         this.isInKart = false;
         this.currentSeat = null;
+        this.lockedRooms = {};
         // Furniture editor
         this.editorMode = false;
         this.movingFurniture = null;
@@ -626,6 +641,12 @@ export class OfficeScene extends Phaser.Scene {
             this.movingFurniture = { tileId: info.tileId, tileX: -1, tileY: -1 };
         });
 
+        // Room lock updates from React
+        eventBus.on('room:locks_updated', (locks) => {
+            this.lockedRooms = locks || {};
+            this.updateDoorCollisions();
+        });
+
         // Rotate: cycle 0° → 90° → 180° → 270° → 0°
         const ROTATABLE = ROTATABLE_TILES;
         eventBus.on('furniture:rotate', (info) => {
@@ -898,7 +919,7 @@ export class OfficeScene extends Phaser.Scene {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
                 } else if (dist > 2) {
-                    const lerpFactor = 0.3;
+                    const lerpFactor = 0.45;
                     rp.sprite.x += dx * lerpFactor;
                     rp.sprite.y += dy * lerpFactor;
                 } else {
@@ -938,7 +959,7 @@ export class OfficeScene extends Phaser.Scene {
                             rp.sprite.x = rp.targetX;
                             rp.sprite.y = rp.targetY;
                         } else {
-                            const lerpFactor = 0.25;
+                            const lerpFactor = 0.4;
                             rp.sprite.x += dx * lerpFactor;
                             rp.sprite.y += dy * lerpFactor;
                         }
@@ -987,6 +1008,22 @@ export class OfficeScene extends Phaser.Scene {
             const oldRoom = this.currentRoom;
             this.currentRoom = null;
             eventBus.emit('room:left', { roomId: oldRoom });
+        }
+    }
+
+    // ==========================================
+    // DOOR LOCK SYSTEM
+    // ==========================================
+    updateDoorCollisions() {
+        for (const [roomId, doors] of Object.entries(ROOM_DOORS)) {
+            const isLocked = !!this.lockedRooms[roomId];
+            doors.forEach(({ x, y }) => {
+                const tile = this.wallsLayer.getTileAt(x, y);
+                if (tile) {
+                    tile.setCollision(isLocked, isLocked, isLocked, isLocked);
+                    tile.tint = isLocked ? 0xff4444 : 0xffffff;
+                }
+            });
         }
     }
 
@@ -1073,8 +1110,15 @@ export class OfficeScene extends Phaser.Scene {
                 }
             }
 
-            // 3. Fallback to player direction
-            nearSeat.faceDirection = faceDir || this.playerDirection || 'down';
+            // 3. Fallback: chairs/sofas/beanbags default to 'down' (natural orientation), others use player direction
+            if (!faceDir) {
+                if (nearSeat.type === 'chair' || nearSeat.type === 'sofa' || nearSeat.type === 'beanbag') {
+                    faceDir = 'down';
+                } else {
+                    faceDir = this.playerDirection || 'down';
+                }
+            }
+            nearSeat.faceDirection = faceDir;
         }
 
         if (nearSeat && !this._lastNearSeat) {

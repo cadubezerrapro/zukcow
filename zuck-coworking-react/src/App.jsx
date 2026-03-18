@@ -265,6 +265,13 @@ export default function App() {
         };
     }, [showWelcome]);
 
+    // Emit room locks to OfficeScene (Phaser)
+    useEffect(() => {
+        eventBus.emit('room:locks_updated', roomLocks);
+    }, [roomLocks]);
+
+    // Auto-unlock is handled server-side in coworking_stream (rooms with < 2 occupants are auto-unlocked)
+
     // Handle window beforeunload
     useEffect(() => {
         const isVercel = !window.location.pathname.startsWith('/conta/');

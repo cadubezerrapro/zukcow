@@ -1,5 +1,22 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Users, Wifi, WifiOff, ChevronRight, ChevronLeft, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen } from 'lucide-react';
+
+function Tooltip({ text, children }) {
+    const [show, setShow] = useState(false);
+    return (
+        <div className="relative" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+            {children}
+            {show && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-1.5 bg-gray-900/95 backdrop-blur-sm border border-gray-700 rounded-lg shadow-xl pointer-events-none whitespace-nowrap z-50">
+                    <span className="text-gray-200 text-xs font-medium">{text}</span>
+                    <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-px">
+                        <div className="w-2 h-2 bg-gray-900/95 border-r border-b border-gray-700 rotate-45 -translate-y-1" />
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 export default function HUD({
     connected, onlineCount, showUserList, onToggleUserList,
@@ -81,64 +98,69 @@ export default function HUD({
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
                 <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-3 py-2 flex items-center gap-3">
                     {/* Mic Button */}
-                    <button
-                        onClick={onToggleMic}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                            micEnabled
-                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                                : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
-                        }`}
-                        title={micEnabled ? 'Desligar microfone' : 'Ligar microfone'}
-                    >
-                        {micEnabled ? <Mic size={18} /> : <MicOff size={18} />}
-                    </button>
+                    <Tooltip text={micEnabled ? 'Desligar microfone' : 'Ligar microfone'}>
+                        <button
+                            onClick={onToggleMic}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                micEnabled
+                                    ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                    : 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                            }`}
+                        >
+                            {micEnabled ? <Mic size={18} /> : <MicOff size={18} />}
+                        </button>
+                    </Tooltip>
 
                     {/* Camera Button */}
-                    <button
-                        onClick={onToggleCam}
-                        className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
-                            camEnabled
-                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
-                                : 'bg-gray-600/40 text-gray-400 hover:bg-gray-600/60'
-                        }`}
-                        title={camEnabled ? 'Desligar camera' : 'Ligar camera'}
-                    >
-                        {camEnabled ? <Video size={18} /> : <VideoOff size={18} />}
-                    </button>
+                    <Tooltip text={camEnabled ? 'Desligar camera' : 'Ligar camera'}>
+                        <button
+                            onClick={onToggleCam}
+                            className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                camEnabled
+                                    ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30'
+                                    : 'bg-gray-600/40 text-gray-400 hover:bg-gray-600/60'
+                            }`}
+                        >
+                            {camEnabled ? <Video size={18} /> : <VideoOff size={18} />}
+                        </button>
+                    </Tooltip>
 
                     {/* Screen Share — only visible when in a room with peers */}
                     {currentRoom && peersInRoom > 0 && (
                         <>
                             <div className="w-px h-6 bg-gather-border" />
-                            <button
-                                onClick={onScreenShare}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all cursor-pointer"
-                                title="Compartilhar tela"
-                            >
-                                <Monitor size={18} />
-                            </button>
+                            <Tooltip text="Compartilhar tela">
+                                <button
+                                    onClick={onScreenShare}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all cursor-pointer"
+                                >
+                                    <Monitor size={18} />
+                                </button>
+                            </Tooltip>
                         </>
                     )}
 
                     {/* Lock/Unlock Room — only when in room with 2+ people */}
-                    {currentRoom && peersInRoom > 0 && (
+                    {currentRoom && peersInRoom >= 2 && (
                         <>
                             {roomLocked ? (
-                                <button
-                                    onClick={onUnlockRoom}
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-all cursor-pointer"
-                                    title="Destrancar sala"
-                                >
-                                    <Unlock size={18} />
-                                </button>
+                                <Tooltip text="Destrancar sala">
+                                    <button
+                                        onClick={onUnlockRoom}
+                                        className="w-9 h-9 rounded-lg flex items-center justify-center bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-all cursor-pointer"
+                                    >
+                                        <Unlock size={18} />
+                                    </button>
+                                </Tooltip>
                             ) : (
-                                <button
-                                    onClick={onLockRoom}
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-600/40 text-gray-400 hover:bg-gray-600/60 transition-all cursor-pointer"
-                                    title="Trancar sala"
-                                >
-                                    <Lock size={18} />
-                                </button>
+                                <Tooltip text="Trancar sala">
+                                    <button
+                                        onClick={onLockRoom}
+                                        className="w-9 h-9 rounded-lg flex items-center justify-center bg-gray-600/40 text-gray-400 hover:bg-gray-600/60 transition-all cursor-pointer"
+                                    >
+                                        <Lock size={18} />
+                                    </button>
+                                </Tooltip>
                             )}
                         </>
                     )}
