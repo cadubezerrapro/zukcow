@@ -2914,16 +2914,67 @@ export class BootScene extends Phaser.Scene {
     // ==========================================
 
     _drawWaterBase(ctx, x, y, T, color = '#2678a0') {
-        // Single flat water color — identical for ALL water tiles
+        // Base fill
         ctx.fillStyle = color;
         ctx.fillRect(x, y, T, T);
-        // Very subtle wave texture (same pattern = seamless tiling)
-        ctx.fillStyle = 'rgba(255,255,255,0.04)';
-        for (let wy = 3; wy < T; wy += 7) {
-            for (let wx = 0; wx < T; wx += 2) {
-                ctx.fillRect(x + wx, y + wy, 2, 1);
+
+        // Darker depth variation (subtle horizontal bands)
+        ctx.fillStyle = 'rgba(0,20,40,0.08)';
+        ctx.fillRect(x, y + 6, T, 3);
+        ctx.fillRect(x, y + 18, T, 3);
+        ctx.fillRect(x, y + 28, T, 2);
+
+        // Lighter ripple bands
+        ctx.fillStyle = 'rgba(80,180,230,0.12)';
+        ctx.fillRect(x, y + 2, T, 2);
+        ctx.fillRect(x, y + 13, T, 2);
+        ctx.fillRect(x, y + 24, T, 2);
+
+        // Wavy highlight lines (sinusoidal)
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        for (let wy = 4; wy < T; wy += 8) {
+            for (let wx = 0; wx < T; wx++) {
+                const wave = Math.sin(wx * 0.5 + wy) * 1.5;
+                const py = Math.round(wy + wave);
+                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
             }
         }
+
+        // Secondary wave lines (offset, different frequency)
+        ctx.fillStyle = 'rgba(60,160,210,0.10)';
+        for (let wy = 8; wy < T; wy += 8) {
+            for (let wx = 0; wx < T; wx++) {
+                const wave = Math.cos(wx * 0.4 + wy * 0.7) * 1.2;
+                const py = Math.round(wy + wave);
+                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
+            }
+        }
+
+        // Sparkle highlights (scattered bright dots)
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(x + 5, y + 3, 1, 1);
+        ctx.fillRect(x + 19, y + 11, 1, 1);
+        ctx.fillRect(x + 27, y + 7, 1, 1);
+        ctx.fillRect(x + 11, y + 22, 1, 1);
+        ctx.fillRect(x + 24, y + 27, 1, 1);
+        ctx.fillRect(x + 3, y + 15, 1, 1);
+        ctx.fillRect(x + 15, y + 30, 1, 1);
+        ctx.fillRect(x + 29, y + 19, 1, 1);
+
+        // Larger shimmer patches
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(x + 4, y + 9, 3, 1);
+        ctx.fillRect(x + 16, y + 5, 4, 1);
+        ctx.fillRect(x + 22, y + 16, 3, 1);
+        ctx.fillRect(x + 8, y + 26, 4, 1);
+        ctx.fillRect(x + 26, y + 1, 3, 1);
+
+        // Deep shadow pockets
+        ctx.fillStyle = 'rgba(0,30,60,0.06)';
+        ctx.fillRect(x + 10, y + 10, 2, 2);
+        ctx.fillRect(x + 22, y + 22, 2, 2);
+        ctx.fillRect(x + 2, y + 20, 2, 2);
+        ctx.fillRect(x + 28, y + 12, 2, 2);
     }
 
     drawWaterDeep(ctx, x, y, T) {
