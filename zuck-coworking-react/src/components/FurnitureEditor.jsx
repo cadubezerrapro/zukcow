@@ -49,6 +49,17 @@ const TILE_NAMES = {
     14: 'Caminho Pedra', 15: 'Pinheiro', 16: 'Arvore Redonda',
     17: 'Arbusto', 18: 'Canteiro Flores', 73: 'Grama-Caminho',
     74: 'Solo Jardim', 75: 'Jardim Florido',
+    // New items (142-179)
+    142: 'Laptop', 143: 'Cadeira Gamer', 144: 'Luminaria Mesa', 145: 'Arquivo',
+    146: 'Quadro Branco P', 147: 'Suporte Fone', 148: 'Dock Station',
+    149: 'Cacto', 150: 'Palmeira', 151: 'Bonsai', 152: 'Planta Suspensa',
+    153: 'Dardos', 154: 'Caixa de Som', 155: 'Neon Sign', 156: 'Mesa DJ',
+    157: 'Karaoke', 158: 'Saco de Pancada', 159: 'Rack Halteres', 160: 'Bola Yoga',
+    161: 'Cesta Basquete', 162: 'Churrasqueira', 163: 'Fogueira', 164: 'Rede',
+    165: 'Guarda-Sol', 166: 'Cama Pet', 167: 'Vaso Flores', 168: 'Vela',
+    169: 'Espelho', 170: 'Lustre', 171: 'Ventilador', 172: 'Rack TV',
+    173: 'Cofre', 174: 'Sapateira', 175: 'Porta Guarda-Chuva', 176: 'Porta Retrato',
+    177: 'Globo', 178: 'Trofeu', 179: 'Quadro Cortica',
 };
 
 // Catalog organized by categories — expanded with ALL tiles
@@ -68,6 +79,13 @@ const CATALOG = [
             { id: 85, name: 'Recepcao' },
             { id: 87, name: 'Servidor' },
             { id: 92, name: 'Armario' },
+            { id: 142, name: 'Laptop' },
+            { id: 143, name: 'Cadeira Gamer' },
+            { id: 144, name: 'Luminaria Mesa' },
+            { id: 145, name: 'Arquivo' },
+            { id: 146, name: 'Quadro Branco P' },
+            { id: 147, name: 'Suporte Fone' },
+            { id: 148, name: 'Dock Station' },
         ]
     },
     {
@@ -147,6 +165,17 @@ const CATALOG = [
             { id: 127, name: 'Aquario 2x1 (Dir)' },
             { id: 136, name: 'Estante 2 (Topo)' },
             { id: 137, name: 'Estante 2 (Base)' },
+            { id: 167, name: 'Vaso Flores' },
+            { id: 168, name: 'Vela' },
+            { id: 169, name: 'Espelho' },
+            { id: 170, name: 'Lustre' },
+            { id: 171, name: 'Ventilador' },
+            { id: 172, name: 'Rack TV' },
+            { id: 176, name: 'Porta Retrato' },
+            { id: 177, name: 'Globo' },
+            { id: 178, name: 'Trofeu' },
+            { id: 179, name: 'Quadro Cortica' },
+            { id: 166, name: 'Cama Pet' },
         ]
     },
     {
@@ -157,6 +186,11 @@ const CATALOG = [
             { id: 81, name: 'Sinuca' },
             { id: 82, name: 'Ping Pong' },
             { id: 91, name: 'Esteira' },
+            { id: 153, name: 'Dardos' },
+            { id: 154, name: 'Caixa de Som' },
+            { id: 155, name: 'Neon Sign' },
+            { id: 156, name: 'Mesa DJ' },
+            { id: 157, name: 'Karaoke' },
             { id: 128, name: 'Sinuca 2x2 (SE)' },
             { id: 129, name: 'Sinuca 2x2 (SD)' },
             { id: 130, name: 'Sinuca 2x2 (IE)' },
@@ -169,6 +203,18 @@ const CATALOG = [
             { id: 141, name: 'Arcade (Base)' },
             { id: 138, name: 'Maq. Vendas (Topo)' },
             { id: 139, name: 'Maq. Vendas (Base)' },
+        ]
+    },
+    {
+        name: 'Fitness',
+        icon: '💪',
+        items: [
+            { id: 90, name: 'Tapete Yoga' },
+            { id: 91, name: 'Esteira' },
+            { id: 158, name: 'Saco de Pancada' },
+            { id: 159, name: 'Rack Halteres' },
+            { id: 160, name: 'Bola Yoga' },
+            { id: 161, name: 'Cesta Basquete' },
         ]
     },
     {
@@ -187,6 +233,9 @@ const CATALOG = [
             { id: 108, name: 'Balcao Bar' },
             { id: 109, name: 'Banqueta' },
             { id: 34, name: 'Impressora' },
+            { id: 173, name: 'Cofre' },
+            { id: 174, name: 'Sapateira' },
+            { id: 175, name: 'Porta Guarda-Chuva' },
         ]
     },
     {
@@ -251,6 +300,14 @@ const CATALOG = [
             { id: 110, name: 'Fonte (base)' },
             { id: 62, name: 'Lirio d\'Agua' },
             { id: 63, name: 'Ponte' },
+            { id: 149, name: 'Cacto' },
+            { id: 150, name: 'Palmeira' },
+            { id: 151, name: 'Bonsai' },
+            { id: 152, name: 'Planta Suspensa' },
+            { id: 162, name: 'Churrasqueira' },
+            { id: 163, name: 'Fogueira' },
+            { id: 164, name: 'Rede' },
+            { id: 165, name: 'Guarda-Sol' },
         ]
     },
     {

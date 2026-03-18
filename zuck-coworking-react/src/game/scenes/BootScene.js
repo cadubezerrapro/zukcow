@@ -32,7 +32,7 @@ export class BootScene extends Phaser.Scene {
         const SCALE = 2;
         const RT = T * SCALE;   // 64 — real tile size in texture
         const cols = 12;
-        const rows = 12;
+        const rows = 16;
         const EXTRUDE = 1;
         const cellSize = RT + EXTRUDE * 2;  // 66
         const canvasW = cols * cellSize;     // 792
@@ -241,6 +241,53 @@ export class BootScene extends Phaser.Scene {
             case 139: this.drawVending2_Bot(ctx, x, y, T); break;
             case 140: this.drawArcade2_Top(ctx, x, y, T); break;
             case 141: this.drawArcade2_Bot(ctx, x, y, T); break;
+
+            // ===== NEW FURNITURE (142-179) =====
+            // Tech & Office
+            case 142: this.drawLaptop(ctx, x, y, T); break;
+            case 143: this.drawGamingChair(ctx, x, y, T); break;
+            case 144: this.drawDeskLamp(ctx, x, y, T); break;
+            case 145: this.drawFilingCabinet(ctx, x, y, T); break;
+            case 146: this.drawWhiteboardSmall(ctx, x, y, T); break;
+            case 147: this.drawHeadphonesStand(ctx, x, y, T); break;
+            case 148: this.drawDockStation(ctx, x, y, T); break;
+            // Plants
+            case 149: this.drawCactus(ctx, x, y, T); break;
+            case 150: this.drawPalmTree(ctx, x, y, T); break;
+            case 151: this.drawBonsai(ctx, x, y, T); break;
+            case 152: this.drawHangingPlant(ctx, x, y, T); break;
+            // Entertainment
+            case 153: this.drawDartboard(ctx, x, y, T); break;
+            case 154: this.drawSpeaker(ctx, x, y, T); break;
+            case 155: this.drawNeonSign(ctx, x, y, T); break;
+            case 156: this.drawDJTable(ctx, x, y, T); break;
+            case 157: this.drawKaraoke(ctx, x, y, T); break;
+            // Fitness
+            case 158: this.drawPunchingBag(ctx, x, y, T); break;
+            case 159: this.drawDumbbellRack(ctx, x, y, T); break;
+            case 160: this.drawYogaBall(ctx, x, y, T); break;
+            case 161: this.drawBasketballHoop(ctx, x, y, T); break;
+            // Outdoor
+            case 162: this.drawBBQGrill(ctx, x, y, T); break;
+            case 163: this.drawFirePit(ctx, x, y, T); break;
+            case 164: this.drawHammock(ctx, x, y, T); break;
+            case 165: this.drawParasol(ctx, x, y, T); break;
+            // Decor
+            case 166: this.drawPetBed(ctx, x, y, T); break;
+            case 167: this.drawVaseFlowers(ctx, x, y, T); break;
+            case 168: this.drawCandle(ctx, x, y, T); break;
+            case 169: this.drawMirror(ctx, x, y, T); break;
+            case 170: this.drawChandelier(ctx, x, y, T); break;
+            case 171: this.drawFan(ctx, x, y, T); break;
+            // More furniture
+            case 172: this.drawTVStand(ctx, x, y, T); break;
+            case 173: this.drawSafe(ctx, x, y, T); break;
+            case 174: this.drawShoeRack(ctx, x, y, T); break;
+            case 175: this.drawUmbrellaStand(ctx, x, y, T); break;
+            case 176: this.drawPhotoFrame(ctx, x, y, T); break;
+            case 177: this.drawGlobeDesk(ctx, x, y, T); break;
+            case 178: this.drawTrophy(ctx, x, y, T); break;
+            case 179: this.drawCorkboard(ctx, x, y, T); break;
 
             default:
                 ctx.fillStyle = '#1a1c2e';
@@ -7088,5 +7135,670 @@ export class BootScene extends Phaser.Scene {
         const g = parseInt(hex.slice(3, 5), 16);
         const b = parseInt(hex.slice(5, 7), 16);
         return `rgb(${Math.round(r * factor)},${Math.round(g * factor)},${Math.round(b * factor)})`;
+    }
+
+    // =============================================
+    // NEW FURNITURE - Extended catalog (142-179)
+    // =============================================
+
+    drawLaptop(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base/keyboard
+        ctx.fillStyle = '#8a8a9a'; ctx.fillRect(x+4, y+18, 24, 12);
+        ctx.fillStyle = '#6a6a7a'; ctx.fillRect(x+5, y+19, 22, 10);
+        // Keys
+        for(let r=0;r<3;r++) for(let c=0;c<6;c++) {
+            ctx.fillStyle = '#4a4a5a'; ctx.fillRect(x+6+c*3.5, y+20+r*3, 3, 2);
+        }
+        // Screen
+        ctx.fillStyle = '#555'; ctx.fillRect(x+5, y+6, 22, 13);
+        ctx.fillStyle = '#1e3a5f'; ctx.fillRect(x+6, y+7, 20, 11);
+        // Screen glow
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+8, y+9, 8, 2);
+        ctx.fillStyle = '#60a5fa'; ctx.fillRect(x+8, y+12, 12, 1);
+        ctx.fillStyle = '#60a5fa'; ctx.fillRect(x+8, y+14, 10, 1);
+    }
+
+    drawGamingChair(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base/wheels
+        ctx.fillStyle = '#333'; ctx.fillRect(x+10, y+28, 12, 3);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+14, y+25, 4, 4);
+        // Seat
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+8, y+18, 16, 8);
+        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+9, y+19, 14, 6);
+        // Back
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+9, y+4, 14, 15);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x+11, y+6, 10, 4);
+        // Racing stripes
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+9, y+5, 2, 13);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+21, y+5, 2, 13);
+        // Headrest
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+11, y+2, 10, 4);
+        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+12, y+3, 8, 2);
+    }
+
+    drawDeskLamp(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#555'; ctx.fillRect(x+11, y+26, 10, 4);
+        // Arm
+        ctx.fillStyle = '#777'; ctx.fillRect(x+15, y+10, 2, 17);
+        // Lamp head
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+8, y+6, 14, 6);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+9, y+7, 12, 4);
+        // Light glow
+        ctx.fillStyle = 'rgba(251,191,36,0.3)'; ctx.fillRect(x+10, y+12, 10, 4);
+    }
+
+    drawFilingCabinet(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Body
+        ctx.fillStyle = '#6b7280'; ctx.fillRect(x+6, y+4, 20, 26);
+        ctx.fillStyle = '#9ca3af'; ctx.fillRect(x+7, y+5, 18, 24);
+        // Drawers
+        for(let i=0;i<3;i++) {
+            ctx.fillStyle = '#d1d5db'; ctx.fillRect(x+8, y+6+i*8, 16, 7);
+            ctx.fillStyle = '#6b7280'; ctx.fillRect(x+8, y+12+i*8, 16, 1);
+            ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+9+i*8, 4, 2);
+        }
+    }
+
+    drawWhiteboardSmall(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Frame
+        ctx.fillStyle = '#9ca3af'; ctx.fillRect(x+4, y+4, 24, 20);
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(x+5, y+5, 22, 18);
+        // Notes
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(x+7, y+7, 4, 4);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+13, y+7, 4, 4);
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+19, y+7, 4, 4);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+7, y+14, 4, 4);
+        ctx.fillStyle = '#8b5cf6'; ctx.fillRect(x+13, y+14, 4, 4);
+        // Tray
+        ctx.fillStyle = '#6b7280'; ctx.fillRect(x+6, y+24, 20, 3);
+    }
+
+    drawHeadphonesStand(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#555'; ctx.fillRect(x+11, y+26, 10, 4);
+        // Pole
+        ctx.fillStyle = '#777'; ctx.fillRect(x+14, y+10, 4, 17);
+        // Top
+        ctx.fillStyle = '#888'; ctx.fillRect(x+10, y+8, 12, 3);
+        // Headphones
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x+7, y+6, 6, 10);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x+19, y+6, 6, 10);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+8, y+7, 4, 8);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+20, y+7, 4, 8);
+        // Band
+        ctx.fillStyle = '#444'; ctx.fillRect(x+10, y+4, 12, 3);
+    }
+
+    drawDockStation(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#555'; ctx.fillRect(x+4, y+20, 24, 8);
+        ctx.fillStyle = '#666'; ctx.fillRect(x+5, y+21, 22, 6);
+        // Ports
+        ctx.fillStyle = '#333'; ctx.fillRect(x+7, y+23, 3, 2);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+12, y+23, 3, 2);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+17, y+23, 3, 2);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+22, y+23, 3, 2);
+        // LED
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+14, y+21, 4, 1);
+        // Monitor above
+        ctx.fillStyle = '#444'; ctx.fillRect(x+6, y+6, 20, 14);
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+7, y+7, 18, 12);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+9, y+9, 6, 2);
+    }
+
+    drawCactus(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Pot
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+10, y+22, 12, 8);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+11, y+23, 10, 6);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+12, y+24, 8, 2);
+        // Cactus body
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+13, y+8, 6, 15);
+        ctx.fillStyle = '#15803d'; ctx.fillRect(x+14, y+9, 4, 13);
+        // Arms
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+8, y+12, 5, 4);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+8, y+9, 3, 4);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+19, y+14, 5, 4);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+22, y+10, 3, 5);
+        // Flower
+        ctx.fillStyle = '#f43f5e'; ctx.fillRect(x+14, y+6, 4, 3);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+15, y+7, 2, 1);
+    }
+
+    drawPalmTree(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Trunk
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+13, y+14, 6, 16);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+14, y+15, 4, 14);
+        // Leaves
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(x+4, y+4, 10, 5);
+        ctx.fillRect(x+18, y+4, 10, 5);
+        ctx.fillRect(x+8, y+2, 16, 6);
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(x+10, y+3, 12, 4);
+        ctx.fillRect(x+6, y+8, 8, 4);
+        ctx.fillRect(x+18, y+8, 8, 4);
+        // Coconuts
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+13, y+10, 3, 3);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+17, y+11, 3, 3);
+    }
+
+    drawBonsai(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Pot
+        ctx.fillStyle = '#1e40af'; ctx.fillRect(x+9, y+24, 14, 6);
+        ctx.fillStyle = '#1e3a8a'; ctx.fillRect(x+10, y+25, 12, 4);
+        // Trunk
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+14, y+16, 4, 9);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+11, y+14, 4, 4);
+        // Canopy
+        ctx.fillStyle = '#166534'; ctx.fillRect(x+6, y+6, 20, 10);
+        ctx.fillStyle = '#15803d'; ctx.fillRect(x+8, y+4, 16, 10);
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+10, y+5, 12, 6);
+    }
+
+    drawHangingPlant(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Hook
+        ctx.fillStyle = '#888'; ctx.fillRect(x+14, y+0, 4, 4);
+        // Chain
+        ctx.fillStyle = '#666'; ctx.fillRect(x+15, y+3, 2, 6);
+        // Pot
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+10, y+8, 12, 7);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+11, y+9, 10, 5);
+        // Hanging vines
+        ctx.fillStyle = '#16a34a';
+        ctx.fillRect(x+8, y+14, 3, 10);
+        ctx.fillRect(x+13, y+14, 3, 12);
+        ctx.fillRect(x+19, y+14, 3, 8);
+        ctx.fillRect(x+22, y+14, 3, 14);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(x+6, y+18, 3, 8);
+        ctx.fillRect(x+16, y+16, 3, 10);
+    }
+
+    drawDartboard(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        const cx=x+16, cy=y+14;
+        // Outer ring
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(cx-12, cy-12, 24, 24);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(cx-10, cy-10, 20, 20);
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(cx-8, cy-8, 16, 16);
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(cx-6, cy-6, 12, 12);
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(cx-4, cy-4, 8, 8);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(cx-2, cy-2, 4, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(cx-1, cy-1, 2, 2);
+        // Dart
+        ctx.fillStyle = '#60a5fa'; ctx.fillRect(cx+1, cy-1, 8, 2);
+    }
+
+    drawSpeaker(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Body
+        ctx.fillStyle = '#333'; ctx.fillRect(x+8, y+4, 16, 24);
+        ctx.fillStyle = '#222'; ctx.fillRect(x+9, y+5, 14, 22);
+        // Woofer
+        ctx.fillStyle = '#555'; ctx.fillRect(x+11, y+14, 10, 10);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+13, y+16, 6, 6);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+14, y+17, 4, 4);
+        // Tweeter
+        ctx.fillStyle = '#555'; ctx.fillRect(x+13, y+7, 6, 6);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+14, y+8, 4, 4);
+        // LED
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+15, y+25, 2, 1);
+    }
+
+    drawNeonSign(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Background plate
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+3, y+6, 26, 20);
+        // Neon "OPEN"
+        ctx.fillStyle = '#f43f5e';
+        // O
+        ctx.fillRect(x+5, y+10, 5, 8); ctx.fillStyle='#1e293b'; ctx.fillRect(x+6, y+12, 3, 4);
+        // P
+        ctx.fillStyle = '#ec4899'; ctx.fillRect(x+11, y+10, 2, 8);
+        ctx.fillRect(x+11, y+10, 5, 2); ctx.fillRect(x+11, y+14, 5, 2);
+        ctx.fillRect(x+14, y+10, 2, 6);
+        // E
+        ctx.fillStyle = '#f43f5e'; ctx.fillRect(x+18, y+10, 2, 8);
+        ctx.fillRect(x+18, y+10, 5, 2); ctx.fillRect(x+18, y+14, 4, 2); ctx.fillRect(x+18, y+16, 5, 2);
+        // N
+        ctx.fillStyle = '#ec4899'; ctx.fillRect(x+24, y+10, 2, 8); ctx.fillRect(x+27, y+10, 2, 8);
+        ctx.fillRect(x+25, y+12, 2, 2); ctx.fillRect(x+26, y+14, 2, 2);
+        // Glow
+        ctx.fillStyle = 'rgba(244,63,94,0.2)'; ctx.fillRect(x+2, y+5, 28, 22);
+    }
+
+    drawDJTable(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Table
+        ctx.fillStyle = '#333'; ctx.fillRect(x+2, y+14, 28, 14);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+3, y+15, 26, 12);
+        // Turntables
+        ctx.fillStyle = '#222'; ctx.fillRect(x+4, y+16, 10, 10);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+6, y+18, 6, 6);
+        ctx.fillStyle = '#888'; ctx.fillRect(x+8, y+20, 2, 2);
+        ctx.fillStyle = '#222'; ctx.fillRect(x+18, y+16, 10, 10);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+20, y+18, 6, 6);
+        ctx.fillStyle = '#888'; ctx.fillRect(x+22, y+20, 2, 2);
+        // Mixer
+        ctx.fillStyle = '#666'; ctx.fillRect(x+14, y+17, 4, 8);
+        // Laptop on top
+        ctx.fillStyle = '#444'; ctx.fillRect(x+7, y+8, 18, 7);
+        ctx.fillStyle = '#1e3a5f'; ctx.fillRect(x+8, y+9, 16, 5);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+10, y+10, 4, 1);
+    }
+
+    drawKaraoke(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Machine body
+        ctx.fillStyle = '#7c3aed'; ctx.fillRect(x+6, y+10, 20, 18);
+        ctx.fillStyle = '#6d28d9'; ctx.fillRect(x+7, y+11, 18, 16);
+        // Screen
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+8, y+12, 12, 8);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+9, y+13, 10, 6);
+        // Music notes
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+10, y+14, 2, 3);
+        ctx.fillStyle = '#f43f5e'; ctx.fillRect(x+14, y+15, 2, 3);
+        // Speaker
+        ctx.fillStyle = '#444'; ctx.fillRect(x+22, y+13, 3, 3);
+        // Microphone
+        ctx.fillStyle = '#888'; ctx.fillRect(x+14, y+4, 4, 3);
+        ctx.fillStyle = '#666'; ctx.fillRect(x+15, y+6, 2, 5);
+        ctx.fillStyle = '#aaa'; ctx.fillRect(x+13, y+2, 6, 3);
+    }
+
+    drawPunchingBag(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Chain
+        ctx.fillStyle = '#888'; ctx.fillRect(x+14, y+2, 4, 6);
+        // Bag
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+10, y+7, 12, 20);
+        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+11, y+8, 10, 18);
+        ctx.fillStyle = '#991b1b'; ctx.fillRect(x+12, y+10, 8, 4);
+        // Bottom
+        ctx.fillStyle = '#7f1d1d'; ctx.fillRect(x+12, y+25, 8, 3);
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x+11, y+8, 3, 16);
+    }
+
+    drawDumbbellRack(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Rack frame
+        ctx.fillStyle = '#555'; ctx.fillRect(x+4, y+4, 4, 26);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+24, y+4, 4, 26);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+4, y+10, 24, 2);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+4, y+18, 24, 2);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+4, y+26, 24, 2);
+        // Dumbbells
+        ctx.fillStyle = '#333'; ctx.fillRect(x+9, y+6, 14, 3);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+8, y+6, 4, 3);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+20, y+6, 4, 3);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+9, y+13, 14, 3);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+8, y+13, 4, 3);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+20, y+13, 4, 3);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+9, y+21, 14, 3);
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+8, y+21, 4, 3);
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+20, y+21, 4, 3);
+    }
+
+    drawYogaBall(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Ball (pixel circle)
+        ctx.fillStyle = '#8b5cf6';
+        ctx.fillRect(x+8, y+8, 16, 18);
+        ctx.fillRect(x+6, y+10, 20, 14);
+        ctx.fillRect(x+10, y+6, 12, 2);
+        ctx.fillRect(x+10, y+26, 12, 2);
+        // Stripe
+        ctx.fillStyle = '#a78bfa';
+        ctx.fillRect(x+8, y+15, 16, 3);
+        // Highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.fillRect(x+10, y+9, 6, 4);
+    }
+
+    drawBasketballHoop(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Backboard
+        ctx.fillStyle = '#f8fafc'; ctx.fillRect(x+6, y+2, 20, 14);
+        ctx.fillStyle = '#e2e8f0'; ctx.fillRect(x+7, y+3, 18, 12);
+        // Square on backboard
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+10, y+5, 12, 8);
+        ctx.fillStyle = '#e2e8f0'; ctx.fillRect(x+11, y+6, 10, 6);
+        // Rim
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+9, y+16, 14, 2);
+        // Net
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillRect(x+10, y+18, 2, 6); ctx.fillRect(x+14, y+18, 2, 8);
+        ctx.fillRect(x+18, y+18, 2, 6); ctx.fillRect(x+12, y+20, 2, 6);
+        ctx.fillRect(x+16, y+20, 2, 6);
+    }
+
+    drawBBQGrill(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Legs
+        ctx.fillStyle = '#555'; ctx.fillRect(x+8, y+22, 3, 8);
+        ctx.fillStyle = '#555'; ctx.fillRect(x+21, y+22, 3, 8);
+        // Body
+        ctx.fillStyle = '#333'; ctx.fillRect(x+6, y+14, 20, 10);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+7, y+15, 18, 8);
+        // Grill lines
+        for(let i=0;i<5;i++) { ctx.fillStyle = '#666'; ctx.fillRect(x+8, y+16+i*2, 16, 1); }
+        // Lid
+        ctx.fillStyle = '#2a2a3a'; ctx.fillRect(x+5, y+10, 22, 5);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+6, y+11, 20, 3);
+        // Handle
+        ctx.fillStyle = '#888'; ctx.fillRect(x+14, y+8, 4, 3);
+        // Smoke
+        ctx.fillStyle = 'rgba(200,200,200,0.3)'; ctx.fillRect(x+12, y+4, 2, 5);
+        ctx.fillStyle = 'rgba(200,200,200,0.2)'; ctx.fillRect(x+18, y+2, 2, 6);
+    }
+
+    drawFirePit(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Pit ring
+        ctx.fillStyle = '#78716c'; ctx.fillRect(x+6, y+16, 20, 12);
+        ctx.fillStyle = '#57534e'; ctx.fillRect(x+8, y+18, 16, 8);
+        ctx.fillStyle = '#44403c'; ctx.fillRect(x+9, y+19, 14, 6);
+        // Fire
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+10, y+12, 12, 8);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+12, y+10, 8, 8);
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+13, y+12, 6, 4);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+11, y+14, 3, 4);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+18, y+13, 3, 5);
+        // Sparks
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+8, 2, 2);
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+19, y+6, 1, 2);
+    }
+
+    drawHammock(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Poles
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+3, y+4, 3, 26);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+26, y+4, 3, 26);
+        // Ropes
+        ctx.fillStyle = '#d4a574'; ctx.fillRect(x+5, y+8, 4, 2);
+        ctx.fillStyle = '#d4a574'; ctx.fillRect(x+23, y+8, 4, 2);
+        // Hammock fabric
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+8, y+10, 16, 3);
+        ctx.fillStyle = '#60a5fa'; ctx.fillRect(x+6, y+12, 20, 4);
+        ctx.fillStyle = '#93c5fd'; ctx.fillRect(x+7, y+16, 18, 3);
+        // Stripes
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+8, y+13, 16, 1);
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+9, y+16, 14, 1);
+    }
+
+    drawParasol(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Pole
+        ctx.fillStyle = '#888'; ctx.fillRect(x+15, y+12, 2, 18);
+        // Umbrella top
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+4, y+4, 24, 4);
+        ctx.fillStyle = '#ef4444'; ctx.fillRect(x+6, y+2, 20, 4);
+        ctx.fillStyle = '#f87171'; ctx.fillRect(x+8, y+1, 16, 3);
+        // Stripes
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+10, y+2, 4, 5);
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+18, y+2, 4, 5);
+        // Tip
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+15, y+0, 2, 2);
+    }
+
+    drawPetBed(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Bed rim
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+4, y+14, 24, 14);
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+5, y+15, 22, 12);
+        // Cushion
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+6, y+16, 20, 10);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+7, y+17, 18, 8);
+        // Sleeping pet (small circle)
+        ctx.fillStyle = '#d4a574'; ctx.fillRect(x+10, y+18, 10, 6);
+        ctx.fillStyle = '#c2956a'; ctx.fillRect(x+11, y+19, 8, 4);
+        // Ears
+        ctx.fillStyle = '#b4845a'; ctx.fillRect(x+10, y+17, 3, 2);
+        ctx.fillStyle = '#b4845a'; ctx.fillRect(x+17, y+17, 3, 2);
+    }
+
+    drawVaseFlowers(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Vase
+        ctx.fillStyle = '#7c3aed'; ctx.fillRect(x+11, y+18, 10, 10);
+        ctx.fillStyle = '#6d28d9'; ctx.fillRect(x+12, y+16, 8, 4);
+        // Stems
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+14, y+6, 2, 12);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+18, y+8, 2, 10);
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+10, y+10, 2, 8);
+        // Flowers
+        ctx.fillStyle = '#f43f5e'; ctx.fillRect(x+12, y+4, 6, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+5, 2, 2);
+        ctx.fillStyle = '#ec4899'; ctx.fillRect(x+16, y+6, 6, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+18, y+7, 2, 2);
+        ctx.fillStyle = '#8b5cf6'; ctx.fillRect(x+8, y+8, 6, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+10, y+9, 2, 2);
+    }
+
+    drawCandle(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Holder
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+10, y+24, 12, 6);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+12, y+22, 8, 4);
+        // Candle body
+        ctx.fillStyle = '#fef3c7'; ctx.fillRect(x+13, y+12, 6, 11);
+        ctx.fillStyle = '#fde68a'; ctx.fillRect(x+14, y+13, 4, 9);
+        // Wick
+        ctx.fillStyle = '#333'; ctx.fillRect(x+15, y+10, 2, 3);
+        // Flame
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+6, 4, 5);
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+15, y+5, 2, 4);
+        ctx.fillStyle = '#f97316'; ctx.fillRect(x+14, y+8, 4, 2);
+        // Glow
+        ctx.fillStyle = 'rgba(251,191,36,0.15)'; ctx.fillRect(x+10, y+4, 12, 10);
+    }
+
+    drawMirror(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Frame
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+6, y+4, 20, 24);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+7, y+5, 18, 22);
+        // Mirror surface
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(x+8, y+6, 16, 20);
+        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(x+9, y+7, 14, 18);
+        // Reflection
+        ctx.fillStyle = 'rgba(255,255,255,0.2)'; ctx.fillRect(x+10, y+8, 4, 14);
+        ctx.fillStyle = 'rgba(255,255,255,0.1)'; ctx.fillRect(x+16, y+10, 4, 8);
+    }
+
+    drawChandelier(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Chain
+        ctx.fillStyle = '#888'; ctx.fillRect(x+15, y+0, 2, 6);
+        // Center
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+12, y+6, 8, 4);
+        // Arms
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+4, y+8, 24, 2);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+6, y+10, 4, 4);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+14, y+10, 4, 4);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+22, y+10, 4, 4);
+        // Lights
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+6, y+14, 4, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+14, 4, 4);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+22, y+14, 4, 4);
+        // Glow
+        ctx.fillStyle = 'rgba(251,191,36,0.2)';
+        ctx.fillRect(x+4, y+16, 8, 6);
+        ctx.fillRect(x+12, y+16, 8, 6);
+        ctx.fillRect(x+20, y+16, 8, 6);
+    }
+
+    drawFan(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#555'; ctx.fillRect(x+10, y+26, 12, 4);
+        // Pole
+        ctx.fillStyle = '#777'; ctx.fillRect(x+14, y+16, 4, 11);
+        // Head
+        ctx.fillStyle = '#e2e8f0'; ctx.fillRect(x+6, y+4, 20, 14);
+        ctx.fillStyle = '#cbd5e1'; ctx.fillRect(x+7, y+5, 18, 12);
+        // Blades (implied motion)
+        ctx.fillStyle = '#94a3b8'; ctx.fillRect(x+8, y+6, 16, 10);
+        ctx.fillStyle = '#64748b'; ctx.fillRect(x+9, y+10, 14, 2);
+        ctx.fillStyle = '#64748b'; ctx.fillRect(x+15, y+6, 2, 10);
+        // Center
+        ctx.fillStyle = '#475569'; ctx.fillRect(x+14, y+9, 4, 4);
+    }
+
+    drawTVStand(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Stand
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+4, y+18, 24, 12);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+5, y+19, 22, 10);
+        // Shelf
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+5, y+24, 22, 2);
+        // Doors
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+6, y+20, 9, 3);
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+17, y+20, 9, 3);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+9, y+21, 2, 1);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+21, y+21, 2, 1);
+        // TV on top
+        ctx.fillStyle = '#222'; ctx.fillRect(x+4, y+4, 24, 14);
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+5, y+5, 22, 12);
+        ctx.fillStyle = '#3b82f6'; ctx.fillRect(x+7, y+7, 8, 3);
+    }
+
+    drawSafe(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Body
+        ctx.fillStyle = '#4b5563'; ctx.fillRect(x+6, y+6, 20, 22);
+        ctx.fillStyle = '#374151'; ctx.fillRect(x+7, y+7, 18, 20);
+        // Door
+        ctx.fillStyle = '#6b7280'; ctx.fillRect(x+8, y+8, 16, 18);
+        // Handle
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+20, y+14, 3, 6);
+        // Dial
+        ctx.fillStyle = '#d1d5db'; ctx.fillRect(x+11, y+14, 6, 6);
+        ctx.fillStyle = '#9ca3af'; ctx.fillRect(x+12, y+15, 4, 4);
+        ctx.fillStyle = '#6b7280'; ctx.fillRect(x+13, y+16, 2, 2);
+        // Rivets
+        ctx.fillStyle = '#9ca3af';
+        ctx.fillRect(x+9, y+9, 2, 2); ctx.fillRect(x+21, y+9, 2, 2);
+        ctx.fillRect(x+9, y+23, 2, 2); ctx.fillRect(x+21, y+23, 2, 2);
+    }
+
+    drawShoeRack(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Frame
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+4, y+6, 24, 24);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+5, y+7, 22, 22);
+        // Shelves
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+5, y+14, 22, 2);
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+5, y+22, 22, 2);
+        // Shoes top
+        ctx.fillStyle = '#1e40af'; ctx.fillRect(x+6, y+8, 6, 5);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+14, y+8, 6, 5);
+        ctx.fillStyle = '#333'; ctx.fillRect(x+22, y+8, 4, 5);
+        // Shoes bottom
+        ctx.fillStyle = '#22c55e'; ctx.fillRect(x+6, y+16, 6, 5);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+14, y+16, 6, 5);
+        ctx.fillStyle = '#8b5cf6'; ctx.fillRect(x+22, y+16, 4, 5);
+    }
+
+    drawUmbrellaStand(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Stand
+        ctx.fillStyle = '#555'; ctx.fillRect(x+10, y+18, 12, 12);
+        ctx.fillStyle = '#666'; ctx.fillRect(x+11, y+19, 10, 10);
+        // Umbrellas
+        ctx.fillStyle = '#1e40af'; ctx.fillRect(x+12, y+4, 3, 16);
+        ctx.fillStyle = '#1e40af'; ctx.fillRect(x+10, y+4, 7, 3);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+17, y+6, 3, 14);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+15, y+6, 7, 3);
+        // Hooks
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+11, y+3, 3, 2);
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+18, y+5, 3, 2);
+    }
+
+    drawPhotoFrame(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Frame
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+6, y+6, 20, 20);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+7, y+7, 18, 18);
+        // Photo
+        ctx.fillStyle = '#87ceeb'; ctx.fillRect(x+8, y+8, 16, 16);
+        // Mountains
+        ctx.fillStyle = '#16a34a'; ctx.fillRect(x+8, y+16, 16, 8);
+        ctx.fillStyle = '#15803d';
+        ctx.fillRect(x+10, y+14, 6, 4);
+        ctx.fillRect(x+18, y+12, 6, 6);
+        // Sun
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+10, y+10, 4, 4);
+    }
+
+    drawGlobeDesk(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+11, y+26, 10, 4);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+14, y+22, 4, 5);
+        // Globe (pixel circle)
+        ctx.fillStyle = '#3b82f6';
+        ctx.fillRect(x+10, y+6, 12, 16);
+        ctx.fillRect(x+8, y+8, 16, 12);
+        // Continents
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(x+12, y+8, 4, 6);
+        ctx.fillRect(x+18, y+10, 4, 4);
+        ctx.fillRect(x+10, y+16, 6, 3);
+        // Frame ring
+        ctx.fillStyle = '#b45309'; ctx.fillRect(x+8, y+13, 16, 2);
+    }
+
+    drawTrophy(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Base
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+10, y+26, 12, 4);
+        ctx.fillStyle = '#92400e'; ctx.fillRect(x+12, y+24, 8, 3);
+        // Stem
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+14, y+18, 4, 7);
+        // Cup
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+8, y+6, 16, 13);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+10, y+4, 12, 4);
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x+10, y+8, 12, 8);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+10, y+8, 12, 8);
+        ctx.fillStyle = '#f59e0b'; ctx.fillRect(x+11, y+9, 10, 6);
+        // Handles
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+5, y+8, 4, 6);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+23, y+8, 4, 6);
+        // Star
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+14, y+10, 4, 4);
+    }
+
+    drawCorkboard(ctx, x, y, T) {
+        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
+        // Frame
+        ctx.fillStyle = '#78350f'; ctx.fillRect(x+3, y+4, 26, 22);
+        // Cork surface
+        ctx.fillStyle = '#d4a574'; ctx.fillRect(x+4, y+5, 24, 20);
+        ctx.fillStyle = '#c2956a'; ctx.fillRect(x+5, y+6, 22, 18);
+        // Pinned notes
+        ctx.fillStyle = '#fde047'; ctx.fillRect(x+6, y+7, 6, 6);
+        ctx.fillStyle = '#f87171'; ctx.fillRect(x+14, y+8, 5, 5);
+        ctx.fillStyle = '#60a5fa'; ctx.fillRect(x+20, y+7, 6, 4);
+        ctx.fillStyle = '#a78bfa'; ctx.fillRect(x+7, y+15, 5, 5);
+        ctx.fillStyle = '#4ade80'; ctx.fillRect(x+14, y+16, 6, 4);
+        ctx.fillStyle = '#fb923c'; ctx.fillRect(x+21, y+14, 4, 6);
+        // Pins
+        ctx.fillStyle = '#dc2626';
+        ctx.fillRect(x+8, y+7, 2, 2); ctx.fillRect(x+16, y+8, 2, 2);
+        ctx.fillRect(x+22, y+7, 2, 2); ctx.fillRect(x+9, y+15, 2, 2);
     }
 }
