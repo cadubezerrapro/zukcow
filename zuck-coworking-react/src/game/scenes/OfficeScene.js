@@ -77,7 +77,10 @@ export class OfficeScene extends Phaser.Scene {
             // (frontLayer is visual-only for depth; wallsLayer handles all physics)
             this.frontLayer.forEachTile(tile => {
                 if (tile.index > 0) {
-                    this.wallsLayer.putTileAt(tile.index, tile.x, tile.y);
+                    const placed = this.wallsLayer.putTileAt(tile.index, tile.x, tile.y);
+                    if (placed) {
+                        placed.setCollision(true, true, true, true);
+                    }
                 }
             });
         }
