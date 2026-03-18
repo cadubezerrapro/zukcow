@@ -72,6 +72,14 @@ export class OfficeScene extends Phaser.Scene {
         this.frontLayer = this.map.createLayer('furniture_front', tileset, 0, 0);
         if (this.frontLayer) {
             this.frontLayer.setDepth(20);
+
+            // Copy furniture_front tiles to wallsLayer for collision
+            // (frontLayer is visual-only for depth; wallsLayer handles all physics)
+            this.frontLayer.forEachTile(tile => {
+                if (tile.index > 0) {
+                    this.wallsLayer.putTileAt(tile.index, tile.x, tile.y);
+                }
+            });
         }
 
         this.autoRotateChairs();
@@ -278,12 +286,6 @@ export class OfficeScene extends Phaser.Scene {
 
         this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.physics.add.collider(this.player, this.wallsLayer);
-
-        // Enable collision on furniture_front layer (bottom tiles of 2x2 furniture)
-        if (this.frontLayer) {
-            this.frontLayer.setCollisionByExclusion([0, -1]);
-            this.physics.add.collider(this.player, this.frontLayer);
-        }
 
         this.createAnimations(this.avatarColor);
 
