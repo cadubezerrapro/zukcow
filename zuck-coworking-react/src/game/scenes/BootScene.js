@@ -2956,120 +2956,88 @@ export class BootScene extends Phaser.Scene {
 
     drawWaterEdgeTop(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Thin grass strip (only 4px)
-        ctx.fillStyle = '#7ec850';
+        // Grass strip matching GRASS_DENSE colors
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 3, y + 1, 2, 2); ctx.fillRect(x + 14, y, 2, 2); ctx.fillRect(x + 26, y + 1, 2, 2);
-        // Thin sand line
-        ctx.fillStyle = '#d4b896';
+        // Sand line
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x, y + 4, T, 1);
-        // Foam dots
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        for (let wx = 0; wx < T; wx += 4) ctx.fillRect(x + wx, y + 5, 2, 1);
     }
 
     drawWaterEdgeBottom(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Thin grass strip at bottom (only 4px)
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 5, y + T - 3, 2, 2); ctx.fillRect(x + 18, y + T - 2, 2, 2); ctx.fillRect(x + 28, y + T - 3, 2, 2);
-        // Thin sand line
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x, y + T - 5, T, 1);
-        // Foam dots
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        for (let wx = 0; wx < T; wx += 4) ctx.fillRect(x + wx, y + T - 6, 2, 1);
     }
 
     drawWaterEdgeLeft(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Thin grass strip on left (only 4px)
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 1, y + 4, 2, 2); ctx.fillRect(x, y + 16, 2, 2); ctx.fillRect(x + 1, y + 26, 2, 2);
-        // Thin sand line
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + 4, y, 1, T);
-        // Foam dots
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        for (let wy = 0; wy < T; wy += 4) ctx.fillRect(x + 5, y + wy, 1, 2);
     }
 
     drawWaterEdgeRight(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Thin grass strip on right (only 4px)
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + T - 3, y + 6, 2, 2); ctx.fillRect(x + T - 2, y + 18, 2, 2); ctx.fillRect(x + T - 3, y + 28, 2, 2);
-        // Thin sand line
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + T - 5, y, 1, T);
-        // Foam dots
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        for (let wy = 0; wy < T; wy += 4) ctx.fillRect(x + T - 6, y + wy, 1, 2);
     }
 
     drawWaterCornerTL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Thin grass L-shape (4px wide)
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
         ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 1, y + 1, 2, 2);
-        // Sand corner arc
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + 4, y + 4, 1, 1);
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 5, y + 5, 2, 1);
-        ctx.fillRect(x + 5, y + 5, 1, 2);
     }
 
     drawWaterCornerTR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
         ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + T - 3, y + 1, 2, 2);
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + T - 5, y + 4, 1, 1);
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + T - 7, y + 5, 2, 1);
-        ctx.fillRect(x + T - 6, y + 5, 1, 2);
     }
 
     drawWaterCornerBL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
         ctx.fillRect(x, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 1, y + T - 3, 2, 2);
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + 4, y + T - 5, 1, 1);
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 5, y + T - 7, 2, 1);
-        ctx.fillRect(x + 5, y + T - 7, 1, 2);
     }
 
     drawWaterCornerBR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        ctx.fillStyle = '#7ec850';
+        ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
         ctx.fillRect(x + T - 4, y, 4, T);
-        ctx.fillStyle = '#6bb840';
+        ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + T - 3, y + T - 3, 2, 2);
-        ctx.fillStyle = '#d4b896';
+        ctx.fillStyle = '#c4a876';
         ctx.fillRect(x + T - 5, y + T - 5, 1, 1);
-        ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + T - 7, y + T - 7, 2, 1);
-        ctx.fillRect(x + T - 6, y + T - 7, 1, 2);
     }
 
     drawLilyPad(ctx, x, y, T) {
