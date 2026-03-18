@@ -130,7 +130,9 @@ export class OfficeScene extends Phaser.Scene {
         } catch (e) {
             console.warn('Failed to load server furniture:', e);
         }
-        // Rebuild colliders after all server edits are applied
+        // Re-apply localStorage edits ON TOP of server state so local deletes win
+        this.applyMapEdits();
+        // Rebuild colliders to match final tile state
         this.rebuildFrontColliders();
     }
 
@@ -201,6 +203,10 @@ export class OfficeScene extends Phaser.Scene {
                     if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
                 } else if (edit.type === 'delete') {
                     targetLayer.removeTileAt(edit.x, edit.y);
+                    // If no layer specified, also try frontLayer
+                    if (!edit.layer && this.frontLayer) {
+                        this.frontLayer.removeTileAt(edit.x, edit.y);
+                    }
                 } else if (edit.type === 'flip') {
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) tile.flipX = edit.flipX;
@@ -232,7 +238,11 @@ export class OfficeScene extends Phaser.Scene {
         try {
             const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
             if (edit.type === 'delete') {
+                // Remove from target layer; if no layer specified, try both
                 targetLayer.removeTileAt(edit.x, edit.y);
+                if (!edit.layer && this.frontLayer) {
+                    this.frontLayer.removeTileAt(edit.x, edit.y);
+                }
             } else if (edit.type === 'place') {
                 targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                 const tile = targetLayer.getTileAt(edit.x, edit.y);
