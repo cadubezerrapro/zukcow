@@ -833,22 +833,14 @@ export class OfficeScene extends Phaser.Scene {
                     rp.kartGfx.setDepth(11);
                     rp.kartGfx.setOrigin(0.5, 0.5);
                 }
-                // Smooth interpolation (kart players move)
-                if (dist > 500) {
+                // Smooth interpolation — use lerp for kart (smoother than speed-based)
+                if (dist > 1000) {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
                 } else if (dist > 2) {
-                    const moveSpeed = KART_SPEED * 1.2;
-                    const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
-                    const maxMove = moveSpeed * Math.min(dt, 0.05);
-                    if (dist <= maxMove) {
-                        rp.sprite.x = rp.targetX;
-                        rp.sprite.y = rp.targetY;
-                    } else {
-                        const ratio = maxMove / dist;
-                        rp.sprite.x += dx * ratio;
-                        rp.sprite.y += dy * ratio;
-                    }
+                    const lerpFactor = 0.15; // smooth lerp
+                    rp.sprite.x += dx * lerpFactor;
+                    rp.sprite.y += dy * lerpFactor;
                 } else {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
@@ -882,21 +874,13 @@ export class OfficeScene extends Phaser.Scene {
                     }
 
                     if (dist > 2) {
-                        if (dist > 500) {
+                        if (dist > 1000) {
                             rp.sprite.x = rp.targetX;
                             rp.sprite.y = rp.targetY;
                         } else {
-                            const moveSpeed = PLAYER_SPEED * 1.2;
-                            const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
-                            const maxMove = moveSpeed * Math.min(dt, 0.05);
-                            if (dist <= maxMove) {
-                                rp.sprite.x = rp.targetX;
-                                rp.sprite.y = rp.targetY;
-                            } else {
-                                const ratio = maxMove / dist;
-                                rp.sprite.x += dx * ratio;
-                                rp.sprite.y += dy * ratio;
-                            }
+                            const lerpFactor = 0.15;
+                            rp.sprite.x += dx * lerpFactor;
+                            rp.sprite.y += dy * lerpFactor;
                         }
                         const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
                         rp.sprite.anims.play(animKey, true);
@@ -1050,9 +1034,15 @@ export class OfficeScene extends Phaser.Scene {
             this.player.y = py;
             // Hide player — driver is drawn into kart_sprite texture
             this.player.setVisible(false);
-            // Remove the kart tile from the map
+            // Remember original kart tile position for later restoration
+            this.kartOriginTileX = seatInfo.tileX;
+            this.kartOriginTileY = seatInfo.tileY;
+            // Remove the kart tile from the map (both walls and ground layers)
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
+            }
+            if (this.groundLayer) {
+                this.groundLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
             // Kart sprite same size as tile
             this.kartSprite = this.add.sprite(px, py, 'kart_sprite');
@@ -1110,11 +1100,12 @@ export class OfficeScene extends Phaser.Scene {
                 this.kartSmokeParticles.forEach(p => p.destroy());
                 this.kartSmokeParticles = null;
             }
-            // Place the kart tile back at player's current position
-            const tileX = Math.floor(this.player.x / TILE_SIZE);
-            const tileY = Math.floor(this.player.y / TILE_SIZE);
-            if (this.wallsLayer) {
-                this.wallsLayer.putTileAt(KART_GID, tileX, tileY);
+            // Place the kart tile back at its original position
+            const tileX = this.kartOriginTileX;
+            const tileY = this.kartOriginTileY;
+            if (this.wallsLayer && tileX != null) {
+                const tile = this.wallsLayer.putTileAt(KART_GID, tileX, tileY);
+                if (tile) tile.setCollision(true);
             }
             // Step off the kart
             this.player.y -= TILE_SIZE;
