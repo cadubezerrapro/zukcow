@@ -204,8 +204,8 @@ export default function App() {
             }
         });
 
-        const unsubMoved = eventBus.on('player:moved', ({ x, y, direction, is_sitting }) => {
-            updatePosition(x, y, direction, currentRoomRef.current, is_sitting).catch(() => {});
+        const unsubMoved = eventBus.on('player:moved', ({ x, y, direction, is_sitting, is_in_kart }) => {
+            updatePosition(x, y, direction, currentRoomRef.current, is_sitting, is_in_kart).catch(() => {});
         });
 
         const unsubPos = eventBus.on('player:position', (pos) => {

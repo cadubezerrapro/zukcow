@@ -44,7 +44,8 @@ export default async function handler(req, res) {
                 status: user.status || 'available',
                 custom_message: user.custom_message || null,
                 current_room: user.current_room || null,
-                is_sitting: user.is_sitting || false
+                is_sitting: user.is_sitting || false,
+                is_in_kart: user.is_in_kart || false
             };
         }
 

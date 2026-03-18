@@ -146,6 +146,7 @@ async function handleUpdatePosition(res, userId, req) {
     let direction = body.direction || 'down';
     let currentRoom = body.current_room || null;
     const isSitting = body.is_sitting === '1';
+    const isInKart = body.is_in_kart === '1';
 
     const validDirs = ['up', 'down', 'left', 'right'];
     if (!validDirs.includes(direction)) direction = 'down';
@@ -169,6 +170,7 @@ async function handleUpdatePosition(res, userId, req) {
                 user.direction = direction;
                 user.current_room = currentRoom;
                 user.is_sitting = isSitting;
+                user.is_in_kart = isInKart;
                 user.last_heartbeat = Date.now();
                 await redis.hset(`cowork:space:${spaceId}:users`, { [userId]: JSON.stringify(user) });
                 await redis.set(`cowork:heartbeat:${userId}`, Date.now(), { ex: HEARTBEAT_TTL });

@@ -71,9 +71,9 @@ class SSEService {
             }
         };
 
-        // Poll every 500ms for smooth multiplayer (300ms was too aggressive for serverless)
+        // Poll every 200ms for smoother multiplayer movement
         poll();
-        this.pollInterval = setInterval(poll, 500);
+        this.pollInterval = setInterval(poll, 200);
     }
 
     startSSE(spaceId) {

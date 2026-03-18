@@ -710,7 +710,7 @@ export class OfficeScene extends Phaser.Scene {
         this.lastSentPosition = { x, y, direction: dir, is_sitting: sitting };
         this.lastSendTime = time;
 
-        eventBus.emit('player:moved', { x, y, direction: dir, is_sitting: this.isSitting });
+        eventBus.emit('player:moved', { x, y, direction: dir, is_sitting: this.isSitting, is_in_kart: this.isInKart });
     }
 
     // --- Remote Players ---
@@ -727,6 +727,7 @@ export class OfficeScene extends Phaser.Scene {
                 this.remotePlayers[id].targetY = data.y;
                 this.remotePlayers[id].targetDirection = data.direction || 'down';
                 this.remotePlayers[id].isSitting = !!data.is_sitting;
+                this.remotePlayers[id].isInKart = !!data.is_in_kart;
                 // Update name if changed
                 if (data.name && this.remotePlayers[id].nameLabel) {
                     this.remotePlayers[id].nameLabel.setText(`\u25CF ${data.name}`);
@@ -739,7 +740,8 @@ export class OfficeScene extends Phaser.Scene {
                     direction: data.direction || 'down',
                     name: data.name || `User ${id}`,
                     avatar_sprite: data.avatar_sprite || 'default',
-                    is_sitting: !!data.is_sitting
+                    is_sitting: !!data.is_sitting,
+                    is_in_kart: !!data.is_in_kart
                 });
             }
         });
@@ -787,6 +789,8 @@ export class OfficeScene extends Phaser.Scene {
             targetDirection: data.direction || 'down',
             currentDirection: data.direction || 'down',
             isSitting: !!data.is_sitting,
+            isInKart: !!data.is_in_kart,
+            kartGfx: null,
             lastInterpTime: 0
         };
     }
@@ -799,6 +803,7 @@ export class OfficeScene extends Phaser.Scene {
         rp.sprite.destroy();
         rp.nameLabel.destroy();
         rp.dot.destroy();
+        if (rp.kartGfx) { rp.kartGfx.destroy(); rp.kartGfx = null; }
         delete this.remotePlayers[id];
     }
 
@@ -810,60 +815,89 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Apply sitting visual transforms
-            if (rp.isSitting) {
-                // Snap to seated position
-                rp.sprite.x = rp.targetX;
-                rp.sprite.y = rp.targetY;
-                rp.sprite.setScale(2, 1.4);
-                rp.sprite.setDepth(12);
-
-                const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
-                rp.sprite.anims.play(idleKey, true);
-            } else {
-                // Restore standing scale if was sitting
-                if (rp.sprite.scaleY !== 2) {
-                    rp.sprite.setScale(2, 2);
-                    rp.sprite.setDepth(10);
+            // Remote player in kart: show kart graphic, hide sprite, allow smooth movement
+            if (rp.isInKart) {
+                rp.sprite.setVisible(false);
+                // Create kart graphics if not yet
+                if (!rp.kartGfx) {
+                    rp.kartGfx = this.add.graphics();
+                    rp.kartGfx.setDepth(11);
                 }
-
-                if (dist > 2) {
-                    // Teleport threshold: if very far (room change, etc), snap instantly
-                    if (dist > 500) {
+                // Smooth interpolation (kart players move)
+                if (dist > 500) {
+                    rp.sprite.x = rp.targetX;
+                    rp.sprite.y = rp.targetY;
+                } else if (dist > 2) {
+                    const moveSpeed = KART_SPEED * 1.2;
+                    const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
+                    const maxMove = moveSpeed * Math.min(dt, 0.05);
+                    if (dist <= maxMove) {
                         rp.sprite.x = rp.targetX;
                         rp.sprite.y = rp.targetY;
                     } else {
-                        // Move at constant speed toward target (matches real player speed)
-                        const moveSpeed = PLAYER_SPEED * 1.2; // slightly faster to catch up
-                        const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
-                        const maxMove = moveSpeed * Math.min(dt, 0.05); // cap dt to avoid huge jumps
-
-                        if (dist <= maxMove) {
-                            rp.sprite.x = rp.targetX;
-                            rp.sprite.y = rp.targetY;
-                        } else {
-                            const ratio = maxMove / dist;
-                            rp.sprite.x += dx * ratio;
-                            rp.sprite.y += dy * ratio;
-                        }
+                        const ratio = maxMove / dist;
+                        rp.sprite.x += dx * ratio;
+                        rp.sprite.y += dy * ratio;
                     }
-
-                    // Walking animation
-                    const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
-                    rp.sprite.anims.play(animKey, true);
                 } else {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
+                }
+                this._drawKartFull(rp.kartGfx, rp.sprite.x, rp.sprite.y, rp.targetDirection, rp.colorName);
+            } else {
+                // Not in kart: destroy kart graphic if it existed
+                if (rp.kartGfx) {
+                    rp.kartGfx.destroy();
+                    rp.kartGfx = null;
+                }
+                rp.sprite.setVisible(true);
 
+                if (rp.isSitting) {
+                    // Regular seat: snap to position, squish sprite
+                    rp.sprite.x = rp.targetX;
+                    rp.sprite.y = rp.targetY;
+                    rp.sprite.setScale(2, 1.4);
+                    rp.sprite.setDepth(12);
                     const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
                     rp.sprite.anims.play(idleKey, true);
+                } else {
+                    // Standing: restore scale, interpolate
+                    if (rp.sprite.scaleY !== 2) {
+                        rp.sprite.setScale(2, 2);
+                        rp.sprite.setDepth(10);
+                    }
+
+                    if (dist > 2) {
+                        if (dist > 500) {
+                            rp.sprite.x = rp.targetX;
+                            rp.sprite.y = rp.targetY;
+                        } else {
+                            const moveSpeed = PLAYER_SPEED * 1.2;
+                            const dt = rp.lastInterpTime > 0 ? (now - rp.lastInterpTime) / 1000 : 1 / 60;
+                            const maxMove = moveSpeed * Math.min(dt, 0.05);
+                            if (dist <= maxMove) {
+                                rp.sprite.x = rp.targetX;
+                                rp.sprite.y = rp.targetY;
+                            } else {
+                                const ratio = maxMove / dist;
+                                rp.sprite.x += dx * ratio;
+                                rp.sprite.y += dy * ratio;
+                            }
+                        }
+                        const animKey = `char_${rp.colorName}_walk_${rp.targetDirection}`;
+                        rp.sprite.anims.play(animKey, true);
+                    } else {
+                        rp.sprite.x = rp.targetX;
+                        rp.sprite.y = rp.targetY;
+                        const idleKey = `char_${rp.colorName}_idle_${rp.targetDirection}`;
+                        rp.sprite.anims.play(idleKey, true);
+                    }
                 }
             }
 
             rp.lastInterpTime = now;
 
             rp.nameLabel.setPosition(rp.sprite.x, rp.sprite.y - 56);
-            // Position dot overlay on the ● character inside the label
             const rlLeft = rp.nameLabel.x - rp.nameLabel.width * rp.nameLabel.originX;
             rp.dot.setPosition(
                 rlLeft + 10,
@@ -1107,47 +1141,47 @@ export class OfficeScene extends Phaser.Scene {
 
     _drawKartFull(gfx, cx, cy, dir, color) {
         gfx.clear();
-        // Single-layer kart with built-in driver head. Player sprite is hidden.
-        const S = 96;
+        // Single-layer kart — slightly smaller than tile to match tile visual
+        const S = 48;
         const x = cx - S / 2;
         const y = cy - S / 2;
 
         // Shadow
         gfx.fillStyle(0x000000, 0.2);
-        gfx.fillEllipse(cx, cy + S / 2, S + 16, 18);
+        gfx.fillEllipse(cx, cy + S / 2, S + 12, 14);
         // Wheels
         gfx.fillStyle(0x1a1a2e, 1);
-        gfx.fillRect(x - 6, y - 3, 14, 18);
-        gfx.fillRect(x + S - 8, y - 3, 14, 18);
-        gfx.fillRect(x - 6, y + S - 15, 14, 18);
-        gfx.fillRect(x + S - 8, y + S - 15, 14, 18);
-        // Wheel detail (hub caps)
+        gfx.fillRect(x - 4, y - 2, 10, 12);
+        gfx.fillRect(x + S - 6, y - 2, 10, 12);
+        gfx.fillRect(x - 4, y + S - 10, 10, 12);
+        gfx.fillRect(x + S - 6, y + S - 10, 10, 12);
+        // Wheel detail
         gfx.fillStyle(0x333355, 1);
-        gfx.fillRect(x - 3, y + 2, 8, 3);
-        gfx.fillRect(x + S - 5, y + 2, 8, 3);
-        gfx.fillRect(x - 3, y + S - 10, 8, 3);
-        gfx.fillRect(x + S - 5, y + S - 10, 8, 3);
+        gfx.fillRect(x - 2, y + 1, 6, 2);
+        gfx.fillRect(x + S - 4, y + 1, 6, 2);
+        gfx.fillRect(x - 2, y + S - 7, 6, 2);
+        gfx.fillRect(x + S - 4, y + S - 7, 6, 2);
         // Body
         gfx.fillStyle(0xdc2626, 1);
         gfx.fillRect(x, y, S, S);
         gfx.fillStyle(0xb91c1c, 1);
         gfx.fillRect(x, cy, S, S / 2);
-        gfx.fillRect(x + S - 6, y, 6, S);
+        gfx.fillRect(x + S - 4, y, 4, S);
         // Body border
-        gfx.lineStyle(2, 0x991b1b, 1);
+        gfx.lineStyle(1, 0x991b1b, 1);
         gfx.strokeRect(x, y, S, S);
-        // Cockpit (dark seat area)
+        // Cockpit (dark seat area) — large to show driver
         gfx.fillStyle(0x1e293b, 1);
-        gfx.fillRect(cx - 20, cy - 20, 40, 40);
+        gfx.fillRect(cx - 17, cy - 17, 34, 34);
         gfx.fillStyle(0x334155, 1);
-        gfx.fillRect(cx - 18, cy - 18, 36, 36);
+        gfx.fillRect(cx - 15, cy - 15, 30, 30);
 
-        // Driver head (pixel art style) — positioned toward front of cockpit
+        // Driver head (pixel art style) — large, positioned toward front
         let hx = cx, hy = cy;
-        if (dir === 'up') hy = cy - 9;
-        else if (dir === 'down') hy = cy + 9;
-        else if (dir === 'left') hx = cx - 9;
-        else if (dir === 'right') hx = cx + 9;
+        if (dir === 'up') hy = cy - 8;
+        else if (dir === 'down') hy = cy + 8;
+        else if (dir === 'left') hx = cx - 8;
+        else if (dir === 'right') hx = cx + 8;
         // Skin
         gfx.fillStyle(0xf5d0a9, 1);
         gfx.fillRect(hx - 10, hy - 10, 20, 20); // face
@@ -1182,36 +1216,36 @@ export class OfficeScene extends Phaser.Scene {
 
         // Steering wheel (in front of driver)
         gfx.fillStyle(0x555555, 1);
-        if (dir === 'up') gfx.fillRect(cx - 7, cy - 26, 14, 5);
-        else if (dir === 'down') gfx.fillRect(cx - 7, cy + 22, 14, 5);
-        else if (dir === 'left') gfx.fillRect(cx - 26, cy - 7, 5, 14);
-        else gfx.fillRect(cx + 22, cy - 7, 5, 14);
+        if (dir === 'up') gfx.fillRect(cx - 6, cy - 21, 12, 4);
+        else if (dir === 'down') gfx.fillRect(cx - 6, cy + 18, 12, 4);
+        else if (dir === 'left') gfx.fillRect(cx - 21, cy - 6, 4, 12);
+        else gfx.fillRect(cx + 18, cy - 6, 4, 12);
 
         // Racing stripe
         gfx.fillStyle(0xf8fafc, 1);
         if (dir === 'up' || dir === 'down') {
-            gfx.fillRect(cx - 3, y, 6, S);
+            gfx.fillRect(cx - 2, y, 4, S);
         } else {
-            gfx.fillRect(x, cy - 3, S, 6);
+            gfx.fillRect(x, cy - 2, S, 4);
         }
         // Headlights
         gfx.fillStyle(0xfde047, 1);
-        if (dir === 'up') { gfx.fillRect(x + 8, y, 12, 5); gfx.fillRect(x + S - 20, y, 12, 5); }
-        else if (dir === 'down') { gfx.fillRect(x + 8, y + S - 5, 12, 5); gfx.fillRect(x + S - 20, y + S - 5, 12, 5); }
-        else if (dir === 'left') { gfx.fillRect(x, y + 8, 5, 12); gfx.fillRect(x, y + S - 20, 5, 12); }
-        else { gfx.fillRect(x + S - 5, y + 8, 5, 12); gfx.fillRect(x + S - 5, y + S - 20, 5, 12); }
+        if (dir === 'up') { gfx.fillRect(x + 5, y, 8, 4); gfx.fillRect(x + S - 13, y, 8, 4); }
+        else if (dir === 'down') { gfx.fillRect(x + 5, y + S - 4, 8, 4); gfx.fillRect(x + S - 13, y + S - 4, 8, 4); }
+        else if (dir === 'left') { gfx.fillRect(x, y + 5, 4, 8); gfx.fillRect(x, y + S - 13, 4, 8); }
+        else { gfx.fillRect(x + S - 4, y + 5, 4, 8); gfx.fillRect(x + S - 4, y + S - 13, 4, 8); }
         // Taillights
         gfx.fillStyle(0xff4444, 1);
-        if (dir === 'up') { gfx.fillRect(x + 8, y + S - 5, 9, 5); gfx.fillRect(x + S - 17, y + S - 5, 9, 5); }
-        else if (dir === 'down') { gfx.fillRect(x + 8, y, 9, 5); gfx.fillRect(x + S - 17, y, 9, 5); }
-        else if (dir === 'left') { gfx.fillRect(x + S - 5, y + 8, 5, 9); gfx.fillRect(x + S - 5, y + S - 17, 5, 9); }
-        else { gfx.fillRect(x, y + 8, 5, 9); gfx.fillRect(x, y + S - 17, 5, 9); }
+        if (dir === 'up') { gfx.fillRect(x + 5, y + S - 4, 6, 4); gfx.fillRect(x + S - 11, y + S - 4, 6, 4); }
+        else if (dir === 'down') { gfx.fillRect(x + 5, y, 6, 4); gfx.fillRect(x + S - 11, y, 6, 4); }
+        else if (dir === 'left') { gfx.fillRect(x + S - 4, y + 5, 4, 6); gfx.fillRect(x + S - 4, y + S - 11, 4, 6); }
+        else { gfx.fillRect(x, y + 5, 4, 6); gfx.fillRect(x, y + S - 11, 4, 6); }
         // Exhaust pipes on back
         gfx.fillStyle(0x6b7280, 1);
-        if (dir === 'up') { gfx.fillRect(cx - 12, y + S, 7, 5); gfx.fillRect(cx + 6, y + S, 7, 5); }
-        else if (dir === 'down') { gfx.fillRect(cx - 12, y - 5, 7, 5); gfx.fillRect(cx + 6, y - 5, 7, 5); }
-        else if (dir === 'left') { gfx.fillRect(x + S, cy - 12, 5, 7); gfx.fillRect(x + S, cy + 6, 5, 7); }
-        else { gfx.fillRect(x - 5, cy - 12, 5, 7); gfx.fillRect(x - 5, cy + 6, 5, 7); }
+        if (dir === 'up') { gfx.fillRect(cx - 8, y + S, 5, 4); gfx.fillRect(cx + 4, y + S, 5, 4); }
+        else if (dir === 'down') { gfx.fillRect(cx - 8, y - 4, 5, 4); gfx.fillRect(cx + 4, y - 4, 5, 4); }
+        else if (dir === 'left') { gfx.fillRect(x + S, cy - 8, 4, 5); gfx.fillRect(x + S, cy + 4, 4, 5); }
+        else { gfx.fillRect(x - 4, cy - 8, 4, 5); gfx.fillRect(x - 4, cy + 4, 4, 5); }
     }
 
     _updateKartSmoke(isMoving) {
