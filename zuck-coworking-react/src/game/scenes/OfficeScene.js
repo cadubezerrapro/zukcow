@@ -397,28 +397,26 @@ export class OfficeScene extends Phaser.Scene {
             right: Phaser.Input.Keyboard.KeyCodes.D,
         });
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
-        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
         this.isJumping = false;
-        this.jumpTween = null;
+        this.jumpOffset = 0; // visual Y offset for jump (doesn't affect physics)
 
-        // Space to jump
+        // Space to jump (use cursors.space from createCursorKeys)
         this.input.keyboard.on('keydown-SPACE', () => {
             if (!this.isJumping && !this.isSitting) {
                 this.isJumping = true;
-                // Visual jump: scale Y squeeze then stretch + move sprite up
-                const baseY = this.player.y;
-                this.jumpTween = this.tweens.add({
-                    targets: this.player,
-                    y: baseY - 24,
-                    scaleX: { from: 2, to: 2.2 },
-                    scaleY: { from: 2, to: 2.4 },
-                    duration: 150,
+                this.jumpOffset = 0;
+                // Animate jumpOffset up then down using a tween on a dummy object
+                const jumpData = { offset: 0 };
+                this.tweens.add({
+                    targets: jumpData,
+                    offset: -30,
+                    duration: 180,
                     ease: 'Quad.easeOut',
                     yoyo: true,
+                    onUpdate: () => { this.jumpOffset = jumpData.offset; },
                     onComplete: () => {
-                        this.player.setScale(2, 2);
+                        this.jumpOffset = 0;
                         this.isJumping = false;
-                        this.jumpTween = null;
                     }
                 });
             }
@@ -648,6 +646,23 @@ export class OfficeScene extends Phaser.Scene {
             room: this.currentRoom
         });
 
+        // Visual jump: create shadow at feet and shift sprite rendering
+        if (this.jumpOffset) {
+            if (!this.jumpShadow) {
+                this.jumpShadow = this.add.ellipse(0, 0, 24, 8, 0x000000, 0.3);
+                this.jumpShadow.setDepth(9);
+            }
+            this.jumpShadow.setPosition(this.player.x, this.player.y + 20);
+            this.jumpShadow.setVisible(true);
+            // Offset the body so sprite renders higher but hitbox stays
+            this.player.body.offset.y = 36 - this.jumpOffset;
+        } else if (this.jumpShadow) {
+            this.jumpShadow.setVisible(false);
+            if (this.player.body && !this.isSitting) {
+                this.player.body.offset.y = 36;
+            }
+        }
+
         // Emit camera info for React overlays (VideoBubbles, FurnitureEditor)
         // Use worldView which gives the exact visible world rectangle
         const cam = this.cameras.main;
@@ -722,7 +737,8 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     updateNameLabel() {
-        this.playerNameLabel.setPosition(this.player.x, this.player.y - 56);
+        const jOff = this.jumpOffset || 0;
+        this.playerNameLabel.setPosition(this.player.x, this.player.y + jOff - 56);
         // Position green dot overlay on top of the "●" character inside the label
         const labelLeft = this.playerNameLabel.x - this.playerNameLabel.width * this.playerNameLabel.originX;
         const dotX = labelLeft + 12; // aligned with the ● char (padding 8 + ~4 center of char)
