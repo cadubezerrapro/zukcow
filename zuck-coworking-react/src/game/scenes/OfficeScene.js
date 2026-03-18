@@ -162,7 +162,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     autoRotateChairs() {
-        const CHAIR_TILES = [27, 28, 36, 125, 126, 143]; // sofa(27), chair(28), puff(36), sofa2x1_L(125), sofa2x1_R(126), gamingChair(143) GIDs
+        const CHAIR_TILES = [27, 28, 36, 125, 126, 144]; // sofa(27), chair(28), puff(36), sofa2x1_L(125), sofa2x1_R(126), gamingChair(144) GIDs
         const DESK_TILES = [23, 24, 121, 122, 123, 124];  // desk(23), meeting table(24), desk2x2 parts GIDs
         // Chair sprite faces DOWN by default. Rotation is CW.
         // To face UP (desk above): 180°. To face LEFT (desk left): 270°. To face RIGHT (desk right): 90°.
@@ -999,8 +999,8 @@ export class OfficeScene extends Phaser.Scene {
         const tileX = Math.floor(this.player.x / TILE_SIZE);
         const tileY = Math.floor(this.player.y / TILE_SIZE);
 
-        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126, gamingChair=143, kart=181
-        const SITTABLE_GIDS = [28, 27, 36, 125, 126, 143, KART_GID];
+        // Sittable GIDs: chair=28, sofa=27, puff=36, sofa2x1_L=125, sofa2x1_R=126, gamingChair=144, kart=181
+        const SITTABLE_GIDS = [28, 27, 36, 125, 126, 144, KART_GID];
         const candidates = [];
 
         // Range ±2 to compensate for collision stopping player before adjacent tile
@@ -1026,7 +1026,7 @@ export class OfficeScene extends Phaser.Scene {
                             tileY: checkY,
                             gid,
                             rotation: tile.rotation || 0,
-                            type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : gid === 143 ? 'chair' : 'other',
+                            type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : gid === 144 ? 'chair' : 'other',
                             score: dist + facingBonus
                         });
                     }
