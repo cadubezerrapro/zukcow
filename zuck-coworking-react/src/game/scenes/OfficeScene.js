@@ -1108,97 +1108,110 @@ export class OfficeScene extends Phaser.Scene {
     _drawKartFull(gfx, cx, cy, dir, color) {
         gfx.clear();
         // Single-layer kart with built-in driver head. Player sprite is hidden.
-        const S = 48;
+        const S = 64;
         const x = cx - S / 2;
         const y = cy - S / 2;
 
         // Shadow
         gfx.fillStyle(0x000000, 0.2);
-        gfx.fillEllipse(cx, cy + S / 2, S + 8, 10);
+        gfx.fillEllipse(cx, cy + S / 2, S + 12, 14);
         // Wheels
         gfx.fillStyle(0x1a1a2e, 1);
-        gfx.fillRect(x - 3, y - 2, 8, 8);
-        gfx.fillRect(x + S - 5, y - 2, 8, 8);
-        gfx.fillRect(x - 3, y + S - 6, 8, 8);
-        gfx.fillRect(x + S - 5, y + S - 6, 8, 8);
+        gfx.fillRect(x - 4, y - 2, 10, 12);
+        gfx.fillRect(x + S - 6, y - 2, 10, 12);
+        gfx.fillRect(x - 4, y + S - 10, 10, 12);
+        gfx.fillRect(x + S - 6, y + S - 10, 10, 12);
+        // Wheel detail
+        gfx.fillStyle(0x333355, 1);
+        gfx.fillRect(x - 2, y + 1, 6, 2);
+        gfx.fillRect(x + S - 4, y + 1, 6, 2);
+        gfx.fillRect(x - 2, y + S - 7, 6, 2);
+        gfx.fillRect(x + S - 4, y + S - 7, 6, 2);
         // Body
         gfx.fillStyle(0xdc2626, 1);
         gfx.fillRect(x, y, S, S);
         gfx.fillStyle(0xb91c1c, 1);
         gfx.fillRect(x, cy, S, S / 2);
-        gfx.fillRect(x + S - 3, y, 3, S);
-        // Cockpit (dark seat)
+        gfx.fillRect(x + S - 4, y, 4, S);
+        // Body border
+        gfx.lineStyle(1, 0x991b1b, 1);
+        gfx.strokeRect(x, y, S, S);
+        // Cockpit (dark seat area)
         gfx.fillStyle(0x1e293b, 1);
-        gfx.fillRect(cx - 10, cy - 10, 20, 20);
+        gfx.fillRect(cx - 14, cy - 14, 28, 28);
         gfx.fillStyle(0x334155, 1);
-        gfx.fillRect(cx - 8, cy - 8, 16, 16);
+        gfx.fillRect(cx - 12, cy - 12, 24, 24);
 
         // Driver head (pixel art style) — positioned toward front of cockpit
         let hx = cx, hy = cy;
-        if (dir === 'up') hy = cy - 4;
-        else if (dir === 'down') hy = cy + 4;
-        else if (dir === 'left') hx = cx - 4;
-        else if (dir === 'right') hx = cx + 4;
-        // Skin color
-        const skinColors = { blue: 0xf5d0a9, red: 0xf5d0a9, green: 0xf5d0a9, purple: 0xf5d0a9, orange: 0xf5d0a9, pink: 0xf5d0a9, teal: 0xf5d0a9, gray: 0xf5d0a9 };
-        gfx.fillStyle(skinColors[color] || 0xf5d0a9, 1);
-        gfx.fillRect(hx - 5, hy - 5, 10, 10); // face
+        if (dir === 'up') hy = cy - 6;
+        else if (dir === 'down') hy = cy + 6;
+        else if (dir === 'left') hx = cx - 6;
+        else if (dir === 'right') hx = cx + 6;
+        // Skin
+        gfx.fillStyle(0xf5d0a9, 1);
+        gfx.fillRect(hx - 7, hy - 7, 14, 14); // face
         // Hair (brown)
         gfx.fillStyle(0x5c3317, 1);
         if (dir === 'up') {
-            gfx.fillRect(hx - 5, hy - 5, 10, 4); // back of head
+            gfx.fillRect(hx - 7, hy - 7, 14, 6); // back of head
         } else if (dir === 'down') {
-            gfx.fillRect(hx - 5, hy - 5, 10, 3); // hair on top
+            gfx.fillRect(hx - 7, hy - 7, 14, 4); // hair on top
         } else {
-            gfx.fillRect(hx - 5, hy - 5, 10, 3);
-            if (dir === 'left') gfx.fillRect(hx - 5, hy - 2, 3, 6);
-            else gfx.fillRect(hx + 3, hy - 2, 3, 6);
+            gfx.fillRect(hx - 7, hy - 7, 14, 4);
+            if (dir === 'left') gfx.fillRect(hx - 7, hy - 3, 4, 8);
+            else gfx.fillRect(hx + 4, hy - 3, 4, 8);
         }
         // Eyes (only when facing down/left/right)
         if (dir !== 'up') {
             gfx.fillStyle(0x000000, 1);
             if (dir === 'down') {
-                gfx.fillRect(hx - 3, hy, 2, 2);
-                gfx.fillRect(hx + 2, hy, 2, 2);
+                gfx.fillRect(hx - 4, hy + 1, 3, 3);
+                gfx.fillRect(hx + 2, hy + 1, 3, 3);
             } else if (dir === 'left') {
-                gfx.fillRect(hx - 3, hy, 2, 2);
+                gfx.fillRect(hx - 4, hy + 1, 3, 3);
             } else {
-                gfx.fillRect(hx + 2, hy, 2, 2);
+                gfx.fillRect(hx + 2, hy + 1, 3, 3);
             }
+        }
+        // Mouth (when facing down)
+        if (dir === 'down') {
+            gfx.fillStyle(0xc0856a, 1);
+            gfx.fillRect(hx - 2, hy + 5, 4, 1);
         }
 
         // Steering wheel (in front of driver)
-        gfx.fillStyle(0x6b7280, 1);
-        if (dir === 'up') gfx.fillRect(cx - 4, cy - 14, 8, 3);
-        else if (dir === 'down') gfx.fillRect(cx - 4, cy + 12, 8, 3);
-        else if (dir === 'left') gfx.fillRect(cx - 14, cy - 4, 3, 8);
-        else gfx.fillRect(cx + 12, cy - 4, 3, 8);
+        gfx.fillStyle(0x555555, 1);
+        if (dir === 'up') gfx.fillRect(cx - 5, cy - 18, 10, 4);
+        else if (dir === 'down') gfx.fillRect(cx - 5, cy + 15, 10, 4);
+        else if (dir === 'left') gfx.fillRect(cx - 18, cy - 5, 4, 10);
+        else gfx.fillRect(cx + 15, cy - 5, 4, 10);
 
         // Racing stripe
         gfx.fillStyle(0xf8fafc, 1);
         if (dir === 'up' || dir === 'down') {
-            gfx.fillRect(cx - 1, y, 3, S);
+            gfx.fillRect(cx - 2, y, 4, S);
         } else {
-            gfx.fillRect(x, cy - 1, S, 3);
+            gfx.fillRect(x, cy - 2, S, 4);
         }
         // Headlights
         gfx.fillStyle(0xfde047, 1);
-        if (dir === 'up') { gfx.fillRect(x + 4, y, 6, 3); gfx.fillRect(x + S - 10, y, 6, 3); }
-        else if (dir === 'down') { gfx.fillRect(x + 4, y + S - 3, 6, 3); gfx.fillRect(x + S - 10, y + S - 3, 6, 3); }
-        else if (dir === 'left') { gfx.fillRect(x, y + 4, 3, 6); gfx.fillRect(x, y + S - 10, 3, 6); }
-        else { gfx.fillRect(x + S - 3, y + 4, 3, 6); gfx.fillRect(x + S - 3, y + S - 10, 3, 6); }
+        if (dir === 'up') { gfx.fillRect(x + 5, y, 8, 4); gfx.fillRect(x + S - 13, y, 8, 4); }
+        else if (dir === 'down') { gfx.fillRect(x + 5, y + S - 4, 8, 4); gfx.fillRect(x + S - 13, y + S - 4, 8, 4); }
+        else if (dir === 'left') { gfx.fillRect(x, y + 5, 4, 8); gfx.fillRect(x, y + S - 13, 4, 8); }
+        else { gfx.fillRect(x + S - 4, y + 5, 4, 8); gfx.fillRect(x + S - 4, y + S - 13, 4, 8); }
         // Taillights
         gfx.fillStyle(0xff4444, 1);
-        if (dir === 'up') { gfx.fillRect(x + 4, y + S - 3, 4, 3); gfx.fillRect(x + S - 8, y + S - 3, 4, 3); }
-        else if (dir === 'down') { gfx.fillRect(x + 4, y, 4, 3); gfx.fillRect(x + S - 8, y, 4, 3); }
-        else if (dir === 'left') { gfx.fillRect(x + S - 3, y + 4, 3, 4); gfx.fillRect(x + S - 3, y + S - 8, 3, 4); }
-        else { gfx.fillRect(x, y + 4, 3, 4); gfx.fillRect(x, y + S - 8, 3, 4); }
+        if (dir === 'up') { gfx.fillRect(x + 5, y + S - 4, 6, 4); gfx.fillRect(x + S - 11, y + S - 4, 6, 4); }
+        else if (dir === 'down') { gfx.fillRect(x + 5, y, 6, 4); gfx.fillRect(x + S - 11, y, 6, 4); }
+        else if (dir === 'left') { gfx.fillRect(x + S - 4, y + 5, 4, 6); gfx.fillRect(x + S - 4, y + S - 11, 4, 6); }
+        else { gfx.fillRect(x, y + 5, 4, 6); gfx.fillRect(x, y + S - 11, 4, 6); }
         // Exhaust pipes on back
         gfx.fillStyle(0x6b7280, 1);
-        if (dir === 'up') { gfx.fillRect(cx - 6, y + S, 4, 3); gfx.fillRect(cx + 3, y + S, 4, 3); }
-        else if (dir === 'down') { gfx.fillRect(cx - 6, y - 3, 4, 3); gfx.fillRect(cx + 3, y - 3, 4, 3); }
-        else if (dir === 'left') { gfx.fillRect(x + S, cy - 6, 3, 4); gfx.fillRect(x + S, cy + 3, 3, 4); }
-        else { gfx.fillRect(x - 3, cy - 6, 3, 4); gfx.fillRect(x - 3, cy + 3, 3, 4); }
+        if (dir === 'up') { gfx.fillRect(cx - 8, y + S, 5, 4); gfx.fillRect(cx + 4, y + S, 5, 4); }
+        else if (dir === 'down') { gfx.fillRect(cx - 8, y - 4, 5, 4); gfx.fillRect(cx + 4, y - 4, 5, 4); }
+        else if (dir === 'left') { gfx.fillRect(x + S, cy - 8, 4, 5); gfx.fillRect(x + S, cy + 4, 4, 5); }
+        else { gfx.fillRect(x - 4, cy - 8, 4, 5); gfx.fillRect(x - 4, cy + 4, 4, 5); }
     }
 
     _updateKartSmoke(isMoving) {
