@@ -38,6 +38,7 @@ export default function App() {
 
     // WebRTC state
     const peersRef = useRef({});
+    const peerMetaRef = useRef({}); // { [peerId]: { makingOffer: bool } }
     const [remoteStreams, setRemoteStreams] = useState({});
 
     // Seat state
@@ -192,7 +193,8 @@ export default function App() {
             // Handle WebRTC signals from SSE
             if (extra?.signals) {
                 extra.signals.forEach(sig => {
-                    handleIncomingSignal(sig.from_user_id, sig.signal_type, sig.payload);
+                    handleIncomingSignal(sig.from_user_id, sig.signal_type, sig.payload)
+                        .catch(e => console.error('[WebRTC] Signal processing error:', e));
                 });
             }
             // Handle furniture version changes
@@ -300,17 +302,39 @@ export default function App() {
     };
 
     // ==========================================
-    // WebRTC Functions
+    // WebRTC Functions (Perfect Negotiation)
     // ==========================================
     const ICE_SERVERS = [
         { urls: 'stun:stun.l.google.com:19302' },
         { urls: 'stun:stun1.l.google.com:19302' }
     ];
 
-    const connectToPeer = useCallback(async (peerId) => {
-        if (peersRef.current[peerId]) return; // Already connected
+    const disconnectPeer = useCallback((peerId) => {
+        const pc = peersRef.current[peerId];
+        if (pc) {
+            pc.close();
+            delete peersRef.current[peerId];
+        }
+        delete peerMetaRef.current[peerId];
+        setRemoteStreams(prev => {
+            const next = { ...prev };
+            delete next[peerId];
+            return next;
+        });
+    }, []);
 
+    const disconnectAllPeers = useCallback(() => {
+        Object.keys(peersRef.current).forEach(peerId => {
+            peersRef.current[peerId].close();
+        });
+        peersRef.current = {};
+        peerMetaRef.current = {};
+        setRemoteStreams({});
+    }, []);
+
+    const createPeerConnection = useCallback((peerId) => {
         const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+        peerMetaRef.current[peerId] = { makingOffer: false };
 
         // Add local tracks if available
         if (localStreamRef.current) {
@@ -337,106 +361,79 @@ export default function App() {
             }
         };
 
-        // Renegotiate when tracks are added/removed after initial connection
+        // Perfect Negotiation: onnegotiationneeded with makingOffer guard
         pc.onnegotiationneeded = async () => {
+            const meta = peerMetaRef.current[peerId];
+            if (!meta) return;
             try {
+                meta.makingOffer = true;
                 const offer = await pc.createOffer();
+                if (pc.signalingState !== 'stable') return; // state changed while creating offer
                 await pc.setLocalDescription(offer);
                 sendSignal(peerId, 'offer', pc.localDescription).catch(() => {});
             } catch (e) {
-                console.warn('Renegotiation failed:', e);
+                console.warn('[WebRTC] Negotiation failed:', e);
+            } finally {
+                if (peerMetaRef.current[peerId]) {
+                    peerMetaRef.current[peerId].makingOffer = false;
+                }
             }
         };
 
         peersRef.current[peerId] = pc;
+        return pc;
+    }, [disconnectPeer]);
 
-        // Create offer
-        const offer = await pc.createOffer();
-        await pc.setLocalDescription(offer);
-        sendSignal(peerId, 'offer', pc.localDescription).catch(() => {});
-    }, []);
+    const connectToPeer = useCallback((peerId) => {
+        if (peersRef.current[peerId]) return;
+        createPeerConnection(peerId);
+        // onnegotiationneeded fires automatically when tracks were added
+    }, [createPeerConnection]);
 
     const handleIncomingSignal = useCallback(async (fromPeerId, signalType, payload) => {
-        const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+        try {
+            const data = typeof payload === 'string' ? JSON.parse(payload) : payload;
+            const myId = String(window.USER_ID || getLocalUserId());
 
-        if (signalType === 'offer') {
-            let pc = peersRef.current[fromPeerId];
-            if (!pc) {
-                pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+            // Polite peer = lexicographically smaller ID (yields on collision)
+            const polite = myId < String(fromPeerId);
 
-                if (localStreamRef.current) {
-                    localStreamRef.current.getTracks().forEach(track => {
-                        pc.addTrack(track, localStreamRef.current);
-                    });
+            if (signalType === 'offer') {
+                let pc = peersRef.current[fromPeerId];
+                if (!pc) {
+                    pc = createPeerConnection(fromPeerId);
                 }
 
-                pc.ontrack = (event) => {
-                    setRemoteStreams(prev => ({ ...prev, [fromPeerId]: event.streams[0] }));
-                };
+                const meta = peerMetaRef.current[fromPeerId] || { makingOffer: false };
+                const offerCollision = meta.makingOffer || pc.signalingState !== 'stable';
 
-                pc.onicecandidate = (event) => {
-                    if (event.candidate) {
-                        sendSignal(fromPeerId, 'ice_candidate', event.candidate).catch(() => {});
-                    }
-                };
+                if (offerCollision && !polite) {
+                    // Impolite peer: ignore incoming offer (our offer wins)
+                    return;
+                }
 
-                pc.onconnectionstatechange = () => {
-                    if (pc.connectionState === 'disconnected' || pc.connectionState === 'failed') {
-                        disconnectPeer(fromPeerId);
-                    }
-                };
+                // Polite peer or no collision: accept incoming offer
+                await pc.setRemoteDescription(new RTCSessionDescription(data));
+                const answer = await pc.createAnswer();
+                await pc.setLocalDescription(answer);
+                sendSignal(fromPeerId, 'answer', pc.localDescription).catch(() => {});
 
-                // Renegotiate when tracks change
-                pc.onnegotiationneeded = async () => {
-                    try {
-                        const offer = await pc.createOffer();
-                        await pc.setLocalDescription(offer);
-                        sendSignal(fromPeerId, 'offer', pc.localDescription).catch(() => {});
-                    } catch (e) {
-                        console.warn('Renegotiation failed:', e);
-                    }
-                };
+            } else if (signalType === 'answer') {
+                const pc = peersRef.current[fromPeerId];
+                if (pc && pc.signalingState === 'have-local-offer') {
+                    await pc.setRemoteDescription(new RTCSessionDescription(data));
+                }
 
-                peersRef.current[fromPeerId] = pc;
+            } else if (signalType === 'ice_candidate') {
+                const pc = peersRef.current[fromPeerId];
+                if (pc) {
+                    try { await pc.addIceCandidate(new RTCIceCandidate(data)); } catch (e) { /* ignore */ }
+                }
             }
-
-            await pc.setRemoteDescription(new RTCSessionDescription(data));
-            const answer = await pc.createAnswer();
-            await pc.setLocalDescription(answer);
-            sendSignal(fromPeerId, 'answer', pc.localDescription).catch(() => {});
-
-        } else if (signalType === 'answer') {
-            const pc = peersRef.current[fromPeerId];
-            if (pc) await pc.setRemoteDescription(new RTCSessionDescription(data));
-
-        } else if (signalType === 'ice_candidate') {
-            const pc = peersRef.current[fromPeerId];
-            if (pc) {
-                try { await pc.addIceCandidate(new RTCIceCandidate(data)); } catch (e) { /* ignore */ }
-            }
+        } catch (e) {
+            console.error(`[WebRTC] Error handling signal ${signalType} from ${fromPeerId}:`, e);
         }
-    }, []);
-
-    const disconnectPeer = useCallback((peerId) => {
-        const pc = peersRef.current[peerId];
-        if (pc) {
-            pc.close();
-            delete peersRef.current[peerId];
-        }
-        setRemoteStreams(prev => {
-            const next = { ...prev };
-            delete next[peerId];
-            return next;
-        });
-    }, []);
-
-    const disconnectAllPeers = useCallback(() => {
-        Object.keys(peersRef.current).forEach(peerId => {
-            peersRef.current[peerId].close();
-        });
-        peersRef.current = {};
-        setRemoteStreams({});
-    }, []);
+    }, [createPeerConnection]);
 
     // Auto-connect to peers in same room
     useEffect(() => {
@@ -470,11 +467,13 @@ export default function App() {
             const screenTrack = stream.getVideoTracks()[0];
             setScreenStream(stream);
 
-            // Replace video track in all peer connections
+            // Replace video track in all peer connections (or add if no video sender)
             Object.values(peersRef.current).forEach(pc => {
                 const sender = pc.getSenders().find(s => s.track?.kind === 'video');
                 if (sender) {
                     sender.replaceTrack(screenTrack);
+                } else {
+                    pc.addTrack(screenTrack, stream);
                 }
             });
 
@@ -592,6 +591,15 @@ export default function App() {
                 onDelete={(info) => {
                     eventBus.emit('furniture:do_delete', info);
                     setSelectedFurniture(null);
+                }}
+                onAddFurniture={(tileId) => {
+                    if (!editorMode) {
+                        setEditorMode(true);
+                        eventBus.emit('editor:toggle', true);
+                    }
+                    setSelectedFurniture(null);
+                    setIsMovingFurniture(true);
+                    eventBus.emit('furniture:add_new', { tileId });
                 }}
             />
         </div>

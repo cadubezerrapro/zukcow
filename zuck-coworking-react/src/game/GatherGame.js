@@ -37,5 +37,8 @@ export function createGatherGame(containerId, config = {}) {
         }
     });
 
+    // Expose game instance for React components (e.g. furniture catalog thumbnails)
+    window.__PHASER_GAME__ = game;
+
     return game;
 }

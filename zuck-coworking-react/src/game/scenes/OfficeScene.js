@@ -497,6 +497,12 @@ export class OfficeScene extends Phaser.Scene {
             this.movingFurniture = { ...info };
         });
 
+        // Add new furniture from catalog
+        eventBus.on('furniture:add_new', (info) => {
+            this.editorMode = true;
+            this.movingFurniture = { tileId: info.tileId, tileX: -1, tileY: -1 };
+        });
+
         // Rotate: cycle 0° → 90° → 180° → 270° → 0°
         const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
         eventBus.on('furniture:rotate', (info) => {
