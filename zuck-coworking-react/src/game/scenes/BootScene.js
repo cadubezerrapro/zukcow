@@ -2913,61 +2913,39 @@ export class BootScene extends Phaser.Scene {
     // WATER / LAKE TILES (IDs 52-63)
     // ==========================================
 
-    _drawWaterBase(ctx, x, y, T, color, waveOffset) {
+    _drawWaterBase(ctx, x, y, T, color = '#2678a0') {
+        // Single flat water color — identical for ALL water tiles
         ctx.fillStyle = color;
         ctx.fillRect(x, y, T, T);
-        // Gentle wave pattern
-        ctx.fillStyle = 'rgba(255,255,255,0.06)';
-        for (let wy = 0; wy < T; wy += 5) {
-            for (let wx = 0; wx < T; wx++) {
-                const wave = Math.sin((wx + wy * 2 + waveOffset) * 0.3) * 1;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
+        // Very subtle wave texture (same pattern = seamless tiling)
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        for (let wy = 3; wy < T; wy += 7) {
+            for (let wx = 0; wx < T; wx += 2) {
+                ctx.fillRect(x + wx, y + wy, 2, 1);
             }
         }
-        // Shimmer
-        ctx.fillStyle = 'rgba(255,255,255,0.15)';
-        ctx.fillRect(x + 6, y + 4, 2, 1);
-        ctx.fillRect(x + 20, y + 14, 2, 1);
-        ctx.fillRect(x + 12, y + 24, 2, 1);
     }
 
     drawWaterDeep(ctx, x, y, T) {
-        // Identical base as edges — no darkening overlay for seamless blending
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Tiny sparkles only
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(x + 6, y + 4, 1, 1);
-        ctx.fillRect(x + 22, y + 12, 1, 1);
-        ctx.fillRect(x + 14, y + 24, 1, 1);
-        ctx.fillRect(x + 28, y + 8, 1, 1);
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawWaterShallow(ctx, x, y, T) {
-        // Identical to deep/edge for seamless blending
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(x + 5, y + 3, 1, 1);
-        ctx.fillRect(x + 18, y + 8, 1, 1);
-        ctx.fillRect(x + 28, y + 16, 1, 1);
-        ctx.fillRect(x + 8, y + 22, 1, 1);
+        this._drawWaterBase(ctx, x, y, T);
     }
 
     drawWaterEdgeTop(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Grass strip matching GRASS_DENSE colors
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
         ctx.fillStyle = '#4a9028';
         ctx.fillRect(x + 3, y + 1, 2, 2); ctx.fillRect(x + 14, y, 2, 2); ctx.fillRect(x + 26, y + 1, 2, 2);
-        // Sand line
         ctx.fillStyle = '#c4a876';
         ctx.fillRect(x, y + 4, T, 1);
     }
 
     drawWaterEdgeBottom(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
         ctx.fillStyle = '#4a9028';
@@ -2977,7 +2955,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterEdgeLeft(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, 4, T);
         ctx.fillStyle = '#4a9028';
@@ -2987,7 +2965,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterEdgeRight(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x + T - 4, y, 4, T);
         ctx.fillStyle = '#4a9028';
@@ -2997,7 +2975,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterCornerTL(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
         ctx.fillRect(x, y, 4, T);
@@ -3008,7 +2986,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterCornerTR(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y, T, 4);
         ctx.fillRect(x + T - 4, y, 4, T);
@@ -3019,7 +2997,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterCornerBL(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
         ctx.fillRect(x, y, 4, T);
@@ -3030,7 +3008,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterCornerBR(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         ctx.fillStyle = '#5ab038';
         ctx.fillRect(x, y + T - 4, T, 4);
         ctx.fillRect(x + T - 4, y, 4, T);
@@ -3083,7 +3061,7 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawBridge(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        this._drawWaterBase(ctx, x, y, T);
         // Wooden planks
         ctx.fillStyle = '#d4a76a';
         ctx.fillRect(x + 4, y, 24, T);
@@ -4877,19 +4855,19 @@ export class BootScene extends Phaser.Scene {
     // ==========================================
 
     drawWaterFrame0(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276', 0);
+        this._drawWaterBase(ctx, x, y, T, '#1a5276');
     }
 
     drawWaterFrame1(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276', 2);
+        this._drawWaterBase(ctx, x, y, T, '#1a5276');
     }
 
     drawWaterFrame2(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276', 4);
+        this._drawWaterBase(ctx, x, y, T, '#1a5276');
     }
 
     drawWaterFrame3(ctx, x, y, T) {
-        this._drawWaterBase(ctx, x, y, T, '#1a5276', 6);
+        this._drawWaterBase(ctx, x, y, T, '#1a5276');
     }
 
     drawAquariumFrame1(ctx, x, y, T) {
