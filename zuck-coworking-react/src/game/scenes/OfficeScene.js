@@ -53,6 +53,7 @@ export class OfficeScene extends Phaser.Scene {
         this.isInKart = false;
         this.currentSeat = null;
         this.lockedRooms = {};
+        this._doorBlockers = {}; // roomId -> array of physics bodies blocking doors
         // Furniture editor
         this.editorMode = false;
         this.movingFurniture = null;
@@ -822,6 +823,15 @@ export class OfficeScene extends Phaser.Scene {
                 if (data.name && this.remotePlayers[id].nameLabel) {
                     this.remotePlayers[id].nameLabel.setText(`\u25CF ${data.name}`);
                 }
+                // Update color if server sent avatar_color and it differs
+                if (data.avatar_color !== null && data.avatar_color !== undefined) {
+                    const newColor = AVATAR_COLORS[parseInt(data.avatar_color) % AVATAR_COLORS.length];
+                    if (newColor !== this.remotePlayers[id].colorName) {
+                        this.remotePlayers[id].colorName = newColor;
+                        this.createAnimations(newColor);
+                        this.remotePlayers[id].sprite.setTexture(`char_${newColor}`);
+                    }
+                }
             } else {
                 this.addRemotePlayer({
                     user_id: id,
@@ -830,6 +840,7 @@ export class OfficeScene extends Phaser.Scene {
                     direction: data.direction || 'down',
                     name: data.name || `User ${id}`,
                     avatar_sprite: data.avatar_sprite || 'default',
+                    avatar_color: data.avatar_color,
                     is_sitting: !!data.is_sitting,
                     is_in_kart: !!data.is_in_kart
                 });
@@ -847,7 +858,10 @@ export class OfficeScene extends Phaser.Scene {
         const id = String(data.user_id);
         if (this.remotePlayers[id] || id === String(this.userId)) return;
 
-        const colorIdx = this.hashString(id) % AVATAR_COLORS.length;
+        // Use avatar_color from server if available, fallback to hash
+        const colorIdx = (data.avatar_color !== null && data.avatar_color !== undefined)
+            ? parseInt(data.avatar_color) % AVATAR_COLORS.length
+            : this.hashString(id) % AVATAR_COLORS.length;
         const colorName = AVATAR_COLORS[colorIdx];
 
         this.createAnimations(colorName);
@@ -919,7 +933,7 @@ export class OfficeScene extends Phaser.Scene {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
                 } else if (dist > 2) {
-                    const lerpFactor = 0.45;
+                    const lerpFactor = 0.15;
                     rp.sprite.x += dx * lerpFactor;
                     rp.sprite.y += dy * lerpFactor;
                 } else {
@@ -959,7 +973,7 @@ export class OfficeScene extends Phaser.Scene {
                             rp.sprite.x = rp.targetX;
                             rp.sprite.y = rp.targetY;
                         } else {
-                            const lerpFactor = 0.4;
+                            const lerpFactor = 0.15;
                             rp.sprite.x += dx * lerpFactor;
                             rp.sprite.y += dy * lerpFactor;
                         }
@@ -1015,15 +1029,38 @@ export class OfficeScene extends Phaser.Scene {
     // DOOR LOCK SYSTEM
     // ==========================================
     updateDoorCollisions() {
+        const TILE = this.map.tileWidth;
+
         for (const [roomId, doors] of Object.entries(ROOM_DOORS)) {
             const isLocked = !!this.lockedRooms[roomId];
+
+            // Visual tint on door tiles
             doors.forEach(({ x, y }) => {
                 const tile = this.wallsLayer.getTileAt(x, y);
-                if (tile) {
-                    tile.setCollision(isLocked, isLocked, isLocked, isLocked);
-                    tile.tint = isLocked ? 0xff4444 : 0xffffff;
-                }
+                if (tile) tile.tint = isLocked ? 0xff4444 : 0xffffff;
             });
+
+            if (isLocked && !this._doorBlockers[roomId]) {
+                // Create invisible static bodies blocking door tiles
+                const group = this.physics.add.staticGroup();
+                doors.forEach(({ x, y }) => {
+                    const bx = x * TILE + TILE / 2;
+                    const by = y * TILE + TILE / 2;
+                    const blocker = this.add.rectangle(bx, by, TILE, TILE, 0xff0000, 0);
+                    group.add(blocker);
+                    blocker.body.setSize(TILE, TILE);
+                    blocker.body.setOffset(-TILE / 2, -TILE / 2);
+                });
+                const collider = this.physics.add.collider(this.player, group);
+                this._doorBlockers[roomId] = { group, collider };
+            } else if (!isLocked && this._doorBlockers[roomId]) {
+                // Remove blockers when unlocked
+                const { group, collider } = this._doorBlockers[roomId];
+                collider.destroy();
+                group.clear(true, true);
+                group.destroy();
+                delete this._doorBlockers[roomId];
+            }
         }
     }
 

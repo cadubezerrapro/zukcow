@@ -147,6 +147,7 @@ async function handleUpdatePosition(res, userId, req) {
     let currentRoom = body.current_room || null;
     const isSitting = body.is_sitting === '1';
     const isInKart = body.is_in_kart === '1';
+    const avatarColor = body.avatar_color !== undefined ? body.avatar_color : null;
 
     const validDirs = ['up', 'down', 'left', 'right'];
     if (!validDirs.includes(direction)) direction = 'down';
@@ -171,6 +172,7 @@ async function handleUpdatePosition(res, userId, req) {
                 user.current_room = currentRoom;
                 user.is_sitting = isSitting;
                 user.is_in_kart = isInKart;
+                if (avatarColor !== null) user.avatar_color = avatarColor;
                 user.last_heartbeat = Date.now();
                 await redis.hset(`cowork:space:${spaceId}:users`, { [userId]: JSON.stringify(user) });
                 await redis.set(`cowork:heartbeat:${userId}`, Date.now(), { ex: HEARTBEAT_TTL });
@@ -410,6 +412,7 @@ async function getOnlineUsers(spaceId) {
             direction: user.direction,
             name: user.name || 'Usuario',
             avatar_sprite: user.avatar_sprite,
+            avatar_color: user.avatar_color !== undefined ? user.avatar_color : null,
             status: user.status || 'available',
             custom_message: user.custom_message || null,
             current_room: user.current_room || null

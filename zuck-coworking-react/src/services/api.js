@@ -53,7 +53,8 @@ export async function leaveSpace() {
 }
 
 export async function updatePosition(x, y, direction, currentRoom = null, isSitting = false, isInKart = false) {
-    const { data } = await api.post(`${API_BASE}?action=update_position`, buildParams({ x, y, direction, current_room: currentRoom, is_sitting: isSitting ? '1' : '0', is_in_kart: isInKart ? '1' : '0' }));
+    const avatarColor = localStorage.getItem('cowork_avatar_color') || '0';
+    const { data } = await api.post(`${API_BASE}?action=update_position`, buildParams({ x, y, direction, current_room: currentRoom, is_sitting: isSitting ? '1' : '0', is_in_kart: isInKart ? '1' : '0', avatar_color: avatarColor }));
     return data;
 }
 

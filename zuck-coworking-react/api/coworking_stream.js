@@ -51,6 +51,7 @@ export default async function handler(req, res) {
                         user.current_room = body.current_room || null;
                         user.is_sitting = body.is_sitting === '1';
                         user.is_in_kart = body.is_in_kart === '1';
+                        if (body.avatar_color !== undefined) user.avatar_color = body.avatar_color;
                         user.last_heartbeat = now;
                         await redis.hset(`cowork:space:${spaceId}:users`, { [userId]: JSON.stringify(user) });
                     }
@@ -76,6 +77,7 @@ export default async function handler(req, res) {
                 direction: user.direction,
                 name: user.name || 'Usuario',
                 avatar_sprite: user.avatar_sprite,
+                avatar_color: user.avatar_color !== undefined ? user.avatar_color : null,
                 status: user.status || 'available',
                 custom_message: user.custom_message || null,
                 current_room: user.current_room || null,
