@@ -21,7 +21,17 @@ export class BootScene extends Phaser.Scene {
     create() {
         this.generateTileset();
         this.generateCharacterSprites();
+        this.generateKartSprite();
         this.scene.start('OfficeScene');
+    }
+
+    generateKartSprite() {
+        // Create standalone kart texture identical to the tile
+        const canvas = this.textures.createCanvas('kart_sprite', 64, 64);
+        const ctx = canvas.context;
+        ctx.scale(2, 2);
+        this.drawKart(ctx, 0, 0, 32);
+        canvas.refresh();
     }
 
     // ==========================================

@@ -679,10 +679,9 @@ export class OfficeScene extends Phaser.Scene {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
         }
 
-        // Update kart visual + smoke
-        if (this.isInKart && this.kartBack) {
-            this._drawKartFull(this.kartBack, this.player.x, this.player.y, this.playerDirection, this.avatarColor);
-            this._updateKartSmoke(vx !== 0 || vy !== 0);
+        // Update kart sprite position to follow player
+        if (this.isInKart && this.kartSprite) {
+            this.kartSprite.setPosition(this.player.x, this.player.y);
         }
     }
 
@@ -818,13 +817,14 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show kart graphic, hide sprite, allow smooth movement
+            // Remote player in kart: show kart sprite, hide player sprite
             if (rp.isInKart) {
                 rp.sprite.setVisible(false);
-                // Create kart graphics if not yet
+                // Create kart sprite if not yet
                 if (!rp.kartGfx) {
-                    rp.kartGfx = this.add.graphics();
+                    rp.kartGfx = this.add.sprite(rp.sprite.x, rp.sprite.y, 'kart_sprite');
                     rp.kartGfx.setDepth(11);
+                    rp.kartGfx.setOrigin(0.5, 0.5);
                 }
                 // Smooth interpolation (kart players move)
                 if (dist > 500) {
@@ -846,9 +846,9 @@ export class OfficeScene extends Phaser.Scene {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
                 }
-                this._drawKartFull(rp.kartGfx, rp.sprite.x, rp.sprite.y, rp.targetDirection, rp.colorName);
+                rp.kartGfx.setPosition(rp.sprite.x, rp.sprite.y);
             } else {
-                // Not in kart: destroy kart graphic if it existed
+                // Not in kart: destroy kart sprite if it existed
                 if (rp.kartGfx) {
                     rp.kartGfx.destroy();
                     rp.kartGfx = null;
@@ -1037,19 +1037,20 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Hide player sprite, kart draws its own head
+            // Hide player sprite, kart uses tile-matching sprite
             this.player.setVisible(false);
             this.player.setDepth(10);
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
-            // Single kart graphics layer (no need for split since player is hidden)
-            this.kartBack = this.add.graphics();
-            this.kartBack.setDepth(11);
+            // Use kart_sprite texture (identical to tile) instead of Graphics
+            this.kartSprite = this.add.sprite(px, py, 'kart_sprite');
+            this.kartSprite.setDepth(11);
+            this.kartSprite.setOrigin(0.5, 0.5);
+            // Clean up old graphics if any
+            if (this.kartBack) { this.kartBack.destroy(); this.kartBack = null; }
             this.kartFront = null;
-            this._drawKartFull(this.kartBack, px, py, dir, this.avatarColor);
-            // Smoke particles
             this.kartSmokeParticles = [];
         } else {
             // Regular seat: disable collision, squish sprite
@@ -1089,7 +1090,8 @@ export class OfficeScene extends Phaser.Scene {
         this.player.setVisible(true);
 
         if (wasInKart) {
-            // Destroy kart visuals + smoke
+            // Destroy kart visuals
+            if (this.kartSprite) { this.kartSprite.destroy(); this.kartSprite = null; }
             if (this.kartBack) { this.kartBack.destroy(); this.kartBack = null; }
             if (this.kartFront) { this.kartFront.destroy(); this.kartFront = null; }
             if (this.kartSmokeParticles) {
