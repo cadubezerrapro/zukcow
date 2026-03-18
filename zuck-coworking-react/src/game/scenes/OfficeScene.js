@@ -183,17 +183,18 @@ export class OfficeScene extends Phaser.Scene {
         try {
             const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
             edits.forEach(edit => {
+                const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
                 if (edit.type === 'rotate') {
-                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
                 } else if (edit.type === 'delete') {
-                    this.wallsLayer.removeTileAt(edit.x, edit.y);
+                    targetLayer.removeTileAt(edit.x, edit.y);
                 } else if (edit.type === 'flip') {
-                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) tile.flipX = edit.flipX;
                 } else if (edit.type === 'place') {
-                    this.wallsLayer.putTileAt(edit.tileId, edit.x, edit.y);
-                    const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                    targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
+                    const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile && edit.rotation) tile.rotation = edit.rotation;
                 }
             });
@@ -217,17 +218,18 @@ export class OfficeScene extends Phaser.Scene {
     applyRemoteEdit(edit) {
         const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
         try {
+            const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
             if (edit.type === 'delete') {
-                this.wallsLayer.removeTileAt(edit.x, edit.y);
+                targetLayer.removeTileAt(edit.x, edit.y);
             } else if (edit.type === 'place') {
-                this.wallsLayer.putTileAt(edit.tileId, edit.x, edit.y);
-                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
+                const tile = targetLayer.getTileAt(edit.x, edit.y);
                 if (tile && edit.rotation) tile.rotation = edit.rotation;
             } else if (edit.type === 'rotate') {
-                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                const tile = targetLayer.getTileAt(edit.x, edit.y);
                 if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
             } else if (edit.type === 'flip') {
-                const tile = this.wallsLayer.getTileAt(edit.x, edit.y);
+                const tile = targetLayer.getTileAt(edit.x, edit.y);
                 if (tile) tile.flipX = edit.flipX;
             }
         } catch (e) {
@@ -384,6 +386,37 @@ export class OfficeScene extends Phaser.Scene {
             eventBus.emit('furniture:deselected');
         });
 
+        // Helper: remove a furniture tile from the correct layer
+        this._removeFurnitureTile = (tileX, tileY, layer) => {
+            if (layer === 'front' && this.frontLayer) {
+                this.frontLayer.removeTileAt(tileX, tileY);
+            } else {
+                this.wallsLayer.removeTileAt(tileX, tileY);
+            }
+        };
+
+        // Helper: find a furniture tile at world coords, checking both layers
+        this._getFurnitureTileAt = (worldX, worldY) => {
+            // Furniture tiles: IDs >= 22 (desk) and not walls/structure
+            const STRUCTURE_IDS = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]);
+
+            // Check wallsLayer first
+            const wallTile = this.wallsLayer.getTileAtWorldXY(worldX, worldY);
+            if (wallTile && wallTile.index > 0 && !STRUCTURE_IDS.has(wallTile.index)) {
+                wallTile._layer = 'walls';
+                return wallTile;
+            }
+            // Check frontLayer
+            if (this.frontLayer) {
+                const frontTile = this.frontLayer.getTileAtWorldXY(worldX, worldY);
+                if (frontTile && frontTile.index > 0) {
+                    frontTile._layer = 'front';
+                    return frontTile;
+                }
+            }
+            return null;
+        };
+
         // Editor highlight rectangle
         this.editorHighlight = this.add.rectangle(0, 0, TILE_SIZE, TILE_SIZE)
             .setStrokeStyle(3, 0xfbbf24)
@@ -398,17 +431,17 @@ export class OfficeScene extends Phaser.Scene {
                 return;
             }
             const worldPt = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
-            const tile = this.wallsLayer.getTileAtWorldXY(worldPt.x, worldPt.y);
-            const isFurniture = tile && tile.index >= 23 && tile.index <= 142;
+            const tile = this._getFurnitureTileAt(worldPt.x, worldPt.y);
 
-            if (isFurniture) {
+            if (tile) {
                 this.editorHighlight.setPosition(tile.pixelX + TILE_SIZE / 2, tile.pixelY + TILE_SIZE / 2);
                 this.editorHighlight.setVisible(true);
                 eventBus.emit('furniture:hover', {
                     tileX: tile.x, tileY: tile.y,
                     tileId: tile.index,
                     worldX: tile.pixelX + TILE_SIZE / 2,
-                    worldY: tile.pixelY
+                    worldY: tile.pixelY,
+                    layer: tile._layer
                 });
             } else {
                 this.editorHighlight.setVisible(false);
@@ -451,13 +484,14 @@ export class OfficeScene extends Phaser.Scene {
             }
 
             // Select furniture
-            const tile = this.wallsLayer.getTileAtWorldXY(worldPt.x, worldPt.y);
-            if (tile && tile.index >= 23 && tile.index <= 142) {
+            const tile = this._getFurnitureTileAt(worldPt.x, worldPt.y);
+            if (tile) {
                 eventBus.emit('furniture:selected', {
                     tileX: tile.x, tileY: tile.y,
                     tileId: tile.index,
                     worldX: tile.pixelX + TILE_SIZE / 2,
-                    worldY: tile.pixelY
+                    worldY: tile.pixelY,
+                    layer: tile._layer
                 });
             } else {
                 eventBus.emit('furniture:deselected');
@@ -496,14 +530,14 @@ export class OfficeScene extends Phaser.Scene {
         });
 
         eventBus.on('furniture:start_move', (info) => {
-            this.wallsLayer.removeTileAt(info.tileX, info.tileY);
+            this._removeFurnitureTile(info.tileX, info.tileY, info.layer);
             this.movingFurniture = info;
-            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY });
+            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY, layer: info.layer });
         });
 
         eventBus.on('furniture:do_delete', (info) => {
-            this.wallsLayer.removeTileAt(info.tileX, info.tileY);
-            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY });
+            this._removeFurnitureTile(info.tileX, info.tileY, info.layer);
+            this.saveMapEdit({ type: 'delete', x: info.tileX, y: info.tileY, layer: info.layer });
             eventBus.emit('furniture:deselected');
         });
 
