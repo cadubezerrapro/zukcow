@@ -22,7 +22,7 @@ export default function HUD({
     connected, onlineCount, showUserList, onToggleUserList,
     micEnabled, camEnabled, onToggleMic, onToggleCam,
     currentRoom, currentRoomName, roomLocked, peersInRoom,
-    onScreenShare, onLockRoom, onUnlockRoom,
+    onScreenShare, isScreenSharing, onLockRoom, onUnlockRoom,
     nearSeat, isSitting
 }) {
     return (
@@ -125,14 +125,18 @@ export default function HUD({
                         </button>
                     </Tooltip>
 
-                    {/* Screen Share — only visible when in a room with peers */}
-                    {currentRoom && peersInRoom > 0 && (
+                    {/* Screen Share — visible when in a room with peers OR when actively sharing */}
+                    {(isScreenSharing || (currentRoom && peersInRoom > 0)) && (
                         <>
                             <div className="w-px h-6 bg-gather-border" />
-                            <Tooltip text="Compartilhar tela">
+                            <Tooltip text={isScreenSharing ? 'Parar compartilhamento' : 'Compartilhar tela'}>
                                 <button
                                     onClick={onScreenShare}
-                                    className="w-9 h-9 rounded-lg flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-all cursor-pointer"
+                                    className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${
+                                        isScreenSharing
+                                            ? 'bg-red-500/20 text-red-400 hover:bg-red-500/30'
+                                            : 'bg-blue-500/20 text-blue-400 hover:bg-blue-500/30'
+                                    }`}
                                 >
                                     <Monitor size={18} />
                                 </button>

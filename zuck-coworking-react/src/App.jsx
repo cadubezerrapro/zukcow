@@ -473,11 +473,37 @@ export default function App() {
 
     // Screen share
     const [screenStream, setScreenStream] = useState(null);
-    const startScreenShare = useCallback(async () => {
+    const screenStreamRef = useRef(null);
+
+    const stopScreenShare = useCallback(() => {
+        const stream = screenStreamRef.current;
+        if (stream) {
+            stream.getTracks().forEach(t => t.stop());
+            setScreenStream(null);
+            screenStreamRef.current = null;
+            // Restore camera track
+            const camTrack = localStreamRef.current?.getVideoTracks()[0];
+            if (camTrack) {
+                Object.values(peersRef.current).forEach(pc => {
+                    const sender = pc.getSenders().find(s => s.track?.kind === 'video');
+                    if (sender) sender.replaceTrack(camTrack);
+                });
+            }
+            eventBus.emit('screenshare:stopped');
+        }
+    }, []);
+
+    const toggleScreenShare = useCallback(async () => {
+        // If already sharing, stop
+        if (screenStreamRef.current) {
+            stopScreenShare();
+            return;
+        }
         try {
             const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
             const screenTrack = stream.getVideoTracks()[0];
             setScreenStream(stream);
+            screenStreamRef.current = stream;
 
             // Replace video track in all peer connections (or add if no video sender)
             Object.values(peersRef.current).forEach(pc => {
@@ -490,23 +516,14 @@ export default function App() {
             });
 
             screenTrack.onended = () => {
-                // Restore camera track when screen share ends
-                setScreenStream(null);
-                const camTrack = localStreamRef.current?.getVideoTracks()[0];
-                if (camTrack) {
-                    Object.values(peersRef.current).forEach(pc => {
-                        const sender = pc.getSenders().find(s => s.track?.kind === 'video');
-                        if (sender) sender.replaceTrack(camTrack);
-                    });
-                }
-                eventBus.emit('screenshare:stopped');
+                stopScreenShare();
             };
 
             eventBus.emit('screenshare:started');
         } catch (err) {
             console.error('Screen share denied:', err);
         }
-    }, []);
+    }, [stopScreenShare]);
 
     // Lock/unlock room
     const handleLockRoom = useCallback(() => {
@@ -544,7 +561,8 @@ export default function App() {
                 currentRoomName={currentRoomName}
                 roomLocked={!!roomLocks[currentRoom]}
                 peersInRoom={currentRoom ? Object.entries(onlineUsers).filter(([id, u]) => String(id) !== String(window.USER_ID || getLocalUserId()) && u.current_room === currentRoom).length + 1 : 0}
-                onScreenShare={startScreenShare}
+                onScreenShare={toggleScreenShare}
+                isScreenSharing={!!screenStream}
                 onLockRoom={handleLockRoom}
                 onUnlockRoom={handleUnlockRoom}
                 nearSeat={nearSeat}
