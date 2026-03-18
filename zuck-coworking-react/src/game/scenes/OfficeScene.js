@@ -822,10 +822,11 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show kart sprite + smaller player on top
+            // Remote player in kart: show kart sprite + cropped player (head+torso)
             if (rp.isInKart) {
                 rp.sprite.setVisible(true);
-                rp.sprite.setScale(1.2);
+                rp.sprite.setScale(1.3);
+                rp.sprite.setCrop(0, 0, 32, 26);
                 rp.sprite.setDepth(12);
                 // Create kart sprite if not yet
                 if (!rp.kartGfx) {
@@ -863,6 +864,7 @@ export class OfficeScene extends Phaser.Scene {
                     rp.kartGfx = null;
                 }
                 rp.sprite.setVisible(true);
+                rp.sprite.setCrop();
 
                 if (rp.isSitting) {
                     // Regular seat: snap to position, squish sprite
@@ -1046,9 +1048,10 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Show player as driver — small scale, on top of kart
+            // Show player as driver — cropped (head+torso only), sitting in cockpit
             this.player.setVisible(true);
-            this.player.setScale(1.2);
+            this.player.setScale(1.3);
+            this.player.setCrop(0, 0, 32, 26); // hide legs, show head+torso
             this.player.setDepth(12); // above kart
             // Remove the kart tile from the map
             if (this.wallsLayer) {
@@ -1093,11 +1096,12 @@ export class OfficeScene extends Phaser.Scene {
         this.currentSeat = null;
         this.isInKart = false;
 
-        // Restore normal scale, offset, depth, visibility
+        // Restore normal scale, offset, depth, visibility, clear crop
         this.player.setScale(2, 2);
         this.player.setOffset(6, 36);
         this.player.setDepth(10);
         this.player.setVisible(true);
+        this.player.setCrop();
 
         if (wasInKart) {
             // Destroy kart visuals
