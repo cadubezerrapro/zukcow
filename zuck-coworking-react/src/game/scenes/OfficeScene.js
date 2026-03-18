@@ -308,7 +308,9 @@ export class OfficeScene extends Phaser.Scene {
             }
         }
 
-        const colorIdx = this.hashString(this.userId) % AVATAR_COLORS.length;
+        // Use saved color from WelcomeModal, fallback to hash
+        const savedColor = localStorage.getItem('cowork_avatar_color');
+        const colorIdx = savedColor !== null ? parseInt(savedColor) % AVATAR_COLORS.length : this.hashString(this.userId) % AVATAR_COLORS.length;
         this.avatarColor = AVATAR_COLORS[colorIdx];
 
         this.player = this.physics.add.sprite(spawnX, spawnY, `char_${this.avatarColor}`, 0);
@@ -825,6 +827,7 @@ export class OfficeScene extends Phaser.Scene {
                     rp.kartGfx = this.add.sprite(rp.sprite.x, rp.sprite.y, 'kart_sprite');
                     rp.kartGfx.setDepth(11);
                     rp.kartGfx.setOrigin(0.5, 0.5);
+                    rp.kartGfx.setScale(0.75);
                 }
                 // Smooth interpolation (kart players move)
                 if (dist > 500) {
@@ -1044,10 +1047,11 @@ export class OfficeScene extends Phaser.Scene {
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
-            // Use kart_sprite texture (identical to tile) instead of Graphics
+            // Use kart_sprite texture (same design as tile) scaled down to match player size
             this.kartSprite = this.add.sprite(px, py, 'kart_sprite');
             this.kartSprite.setDepth(11);
             this.kartSprite.setOrigin(0.5, 0.5);
+            this.kartSprite.setScale(0.75); // 48px — between player (32px) and tile (64px)
             // Clean up old graphics if any
             if (this.kartBack) { this.kartBack.destroy(); this.kartBack = null; }
             this.kartFront = null;

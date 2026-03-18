@@ -95,6 +95,8 @@ export default function WelcomeModal({ onEnter }) {
     const savedName = localStorage.getItem('cowork_user_name') || localStorage.getItem('coworking_display_name');
     const [displayName, setDisplayName] = useState(savedName || window.USER_NAME || '');
     const [selectedColor, setSelectedColor] = useState(() => {
+        const saved = localStorage.getItem('cowork_avatar_color');
+        if (saved !== null) return parseInt(saved);
         return hashString(window.USER_ID || getLocalUserId()) % AVATAR_COLORS.length;
     });
     const [entering, setEntering] = useState(false);
@@ -115,6 +117,7 @@ export default function WelcomeModal({ onEnter }) {
         const name = displayName.trim();
         localStorage.setItem('coworking_display_name', name);
         localStorage.setItem('cowork_user_name', name);
+        localStorage.setItem('cowork_avatar_color', selectedColor.toString());
         onEnter(name);
     };
 
