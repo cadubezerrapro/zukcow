@@ -26,7 +26,7 @@ export default function FurnitureEditor({
     return (
         <>
             {/* Toggle button - always visible */}
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
+            <div className="absolute top-20 left-4 z-30 pointer-events-auto">
                 <button
                     onClick={onToggleEditor}
                     className={`flex items-center gap-2 px-4 py-2 rounded-xl border backdrop-blur-sm transition-all cursor-pointer ${
