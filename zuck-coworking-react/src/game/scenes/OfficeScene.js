@@ -6,6 +6,7 @@ import sseService from '../../services/sse';
 
 const TILE_SIZE = 64;
 const PLAYER_SPEED = 320;
+const SPRINT_SPEED = 540;
 const KART_SPEED = 640;
 const KART_GID = 181;
 const POSITION_SEND_INTERVAL = 250;
@@ -395,6 +396,33 @@ export class OfficeScene extends Phaser.Scene {
             left: Phaser.Input.Keyboard.KeyCodes.A,
             right: Phaser.Input.Keyboard.KeyCodes.D,
         });
+        this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
+        this.spaceKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.isJumping = false;
+        this.jumpTween = null;
+
+        // Space to jump
+        this.input.keyboard.on('keydown-SPACE', () => {
+            if (!this.isJumping && !this.isSitting) {
+                this.isJumping = true;
+                // Visual jump: scale Y squeeze then stretch + move sprite up
+                const baseY = this.player.y;
+                this.jumpTween = this.tweens.add({
+                    targets: this.player,
+                    y: baseY - 24,
+                    scaleX: { from: 2, to: 2.2 },
+                    scaleY: { from: 2, to: 2.4 },
+                    duration: 150,
+                    ease: 'Quad.easeOut',
+                    yoyo: true,
+                    onComplete: () => {
+                        this.player.setScale(2, 2);
+                        this.isJumping = false;
+                        this.jumpTween = null;
+                    }
+                });
+            }
+        });
 
         // X key to sit/stand
         this.input.keyboard.on('keydown-X', () => {
@@ -644,7 +672,8 @@ export class OfficeScene extends Phaser.Scene {
             return;
         }
 
-        const speed = this.isInKart ? KART_SPEED : PLAYER_SPEED;
+        const isSprinting = this.shiftKey && this.shiftKey.isDown && !this.isInKart;
+        const speed = this.isInKart ? KART_SPEED : (isSprinting ? SPRINT_SPEED : PLAYER_SPEED);
         let vx = 0;
         let vy = 0;
 
@@ -1037,12 +1066,9 @@ export class OfficeScene extends Phaser.Scene {
             // Remember original kart tile position for later restoration
             this.kartOriginTileX = seatInfo.tileX;
             this.kartOriginTileY = seatInfo.tileY;
-            // Remove the kart tile from the map (both walls and ground layers)
+            // Remove the kart tile from the walls layer only
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
-            }
-            if (this.groundLayer) {
-                this.groundLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
             // Kart sprite same size as tile
             this.kartSprite = this.add.sprite(px, py, 'kart_sprite');
