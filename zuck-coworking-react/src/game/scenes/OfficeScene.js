@@ -687,6 +687,8 @@ export class OfficeScene extends Phaser.Scene {
             // Rotate kart based on direction (tile faces down by default)
             const dirAngles = { down: 0, left: Math.PI / 2, up: Math.PI, right: -Math.PI / 2 };
             this.kartSprite.setRotation(dirAngles[this.playerDirection] || 0);
+            // Smoke exhaust effect
+            this._updateKartSmoke(vx !== 0 || vy !== 0);
         }
     }
 
@@ -822,11 +824,12 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show kart sprite + cropped player (head+torso)
+            // Remote player in kart: show kart sprite + small driver head in cockpit
             if (rp.isInKart) {
                 rp.sprite.setVisible(true);
-                rp.sprite.setScale(1.3);
-                rp.sprite.setCrop(0, 0, 32, 26);
+                rp.sprite.setScale(0.9);
+                rp.sprite.setCrop(0, 0, 32, 18);
+                rp.sprite.setOrigin(0.5, 0.35);
                 rp.sprite.setDepth(12);
                 // Create kart sprite if not yet
                 if (!rp.kartGfx) {
@@ -865,6 +868,7 @@ export class OfficeScene extends Phaser.Scene {
                 }
                 rp.sprite.setVisible(true);
                 rp.sprite.setCrop();
+                rp.sprite.setOrigin(0.5, 0.5);
 
                 if (rp.isSitting) {
                     // Regular seat: snap to position, squish sprite
@@ -1048,10 +1052,11 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Show player as driver — cropped (head+torso only), sitting in cockpit
+            // Show player as small driver inside kart cockpit
             this.player.setVisible(true);
-            this.player.setScale(1.3);
-            this.player.setCrop(0, 0, 32, 26); // hide legs, show head+torso
+            this.player.setScale(0.9);
+            this.player.setCrop(0, 0, 32, 18); // show only head
+            this.player.setOrigin(0.5, 0.35); // shift anchor up so head sits in cockpit
             this.player.setDepth(12); // above kart
             // Remove the kart tile from the map
             if (this.wallsLayer) {
@@ -1096,12 +1101,13 @@ export class OfficeScene extends Phaser.Scene {
         this.currentSeat = null;
         this.isInKart = false;
 
-        // Restore normal scale, offset, depth, visibility, clear crop
+        // Restore normal scale, offset, depth, visibility, clear crop, origin
         this.player.setScale(2, 2);
         this.player.setOffset(6, 36);
         this.player.setDepth(10);
         this.player.setVisible(true);
         this.player.setCrop();
+        this.player.setOrigin(0.5, 0.5);
 
         if (wasInKart) {
             // Destroy kart visuals
