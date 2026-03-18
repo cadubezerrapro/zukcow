@@ -2937,22 +2937,12 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterDeep(ctx, x, y, T) {
-        // Deep water — SAME base color as edge tiles (#2678a0) for seamless blending
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 2);
-        // Subtle depth darkening
-        ctx.fillStyle = 'rgba(0,15,30,0.1)';
+        // Very subtle depth — keeps seamless with edges
+        ctx.fillStyle = 'rgba(0,10,20,0.05)';
         ctx.fillRect(x, y, T, T);
-        // Extra wave highlights
-        ctx.fillStyle = 'rgba(70,170,220,0.2)';
-        for (let wy = 2; wy < T; wy += 6) {
-            for (let wx = 0; wx < T; wx += 2) {
-                const wave = Math.sin((wx + wy * 2) * 0.3) * 1;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 2, 1);
-            }
-        }
         // Sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.35)';
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
         ctx.fillRect(x + 6, y + 4, 1, 1);
         ctx.fillRect(x + 22, y + 12, 1, 1);
         ctx.fillRect(x + 14, y + 24, 1, 1);
@@ -3000,164 +2990,121 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterEdgeTop(ctx, x, y, T) {
-        // Water base
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
-        // Grass on top
+        // Thin grass strip (only 4px)
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y, T, 12);
-        const grassGreens = ['#6bb840', '#5ab038', '#8dd860'];
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = grassGreens[i % 3];
-            ctx.fillRect(x + (i * 7 + 1) % T, y + (i * 3) % 10, 2, 2);
-        }
-        // Sandy shore
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#6bb840';
+        ctx.fillRect(x + 3, y + 1, 2, 2); ctx.fillRect(x + 14, y, 2, 2); ctx.fillRect(x + 26, y + 1, 2, 2);
+        // Thin sand line
         ctx.fillStyle = '#d4b896';
-        ctx.fillRect(x, y + 11, T, 2);
-        ctx.fillStyle = '#c4a886';
-        ctx.fillRect(x, y + 13, T, 1);
-        // Foam
-        ctx.fillStyle = 'rgba(235,245,251,0.6)';
-        for (let wx = 0; wx < T; wx += 3) ctx.fillRect(x + wx, y + 14, 2, 1);
+        ctx.fillRect(x, y + 4, T, 1);
+        // Foam dots
+        ctx.fillStyle = 'rgba(235,245,251,0.5)';
+        for (let wx = 0; wx < T; wx += 4) ctx.fillRect(x + wx, y + 5, 2, 1);
     }
 
     drawWaterEdgeBottom(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        // Thin grass strip at bottom (only 4px)
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y + 20, T, 12);
-        const grassGreens = ['#6bb840', '#5ab038', '#8dd860'];
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = grassGreens[i % 3];
-            ctx.fillRect(x + (i * 7 + 3) % T, y + 22 + (i * 3) % 8, 2, 2);
-        }
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillStyle = '#6bb840';
+        ctx.fillRect(x + 5, y + T - 3, 2, 2); ctx.fillRect(x + 18, y + T - 2, 2, 2); ctx.fillRect(x + 28, y + T - 3, 2, 2);
+        // Thin sand line
         ctx.fillStyle = '#d4b896';
-        ctx.fillRect(x, y + 19, T, 2);
-        ctx.fillStyle = '#c4a886';
-        ctx.fillRect(x, y + 18, T, 1);
-        ctx.fillStyle = 'rgba(235,245,251,0.6)';
-        for (let wx = 0; wx < T; wx += 3) ctx.fillRect(x + wx, y + 17, 2, 1);
+        ctx.fillRect(x, y + T - 5, T, 1);
+        // Foam dots
+        ctx.fillStyle = 'rgba(235,245,251,0.5)';
+        for (let wx = 0; wx < T; wx += 4) ctx.fillRect(x + wx, y + T - 6, 2, 1);
     }
 
     drawWaterEdgeLeft(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        // Thin grass strip on left (only 4px)
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y, 12, T);
-        const grassGreens = ['#6bb840', '#5ab038', '#8dd860'];
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = grassGreens[i % 3];
-            ctx.fillRect(x + (i * 3) % 10, y + (i * 7 + 1) % T, 2, 2);
-        }
+        ctx.fillRect(x, y, 4, T);
+        ctx.fillStyle = '#6bb840';
+        ctx.fillRect(x + 1, y + 4, 2, 2); ctx.fillRect(x, y + 16, 2, 2); ctx.fillRect(x + 1, y + 26, 2, 2);
+        // Thin sand line
         ctx.fillStyle = '#d4b896';
-        ctx.fillRect(x + 11, y, 2, T);
-        ctx.fillStyle = '#c4a886';
-        ctx.fillRect(x + 13, y, 1, T);
-        ctx.fillStyle = 'rgba(235,245,251,0.6)';
-        for (let wy = 0; wy < T; wy += 3) ctx.fillRect(x + 14, y + wy, 1, 2);
+        ctx.fillRect(x + 4, y, 1, T);
+        // Foam dots
+        ctx.fillStyle = 'rgba(235,245,251,0.5)';
+        for (let wy = 0; wy < T; wy += 4) ctx.fillRect(x + 5, y + wy, 1, 2);
     }
 
     drawWaterEdgeRight(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        // Thin grass strip on right (only 4px)
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x + 20, y, 12, T);
-        const grassGreens = ['#6bb840', '#5ab038', '#8dd860'];
-        for (let i = 0; i < 8; i++) {
-            ctx.fillStyle = grassGreens[i % 3];
-            ctx.fillRect(x + 22 + (i * 3) % 8, y + (i * 7 + 3) % T, 2, 2);
-        }
+        ctx.fillRect(x + T - 4, y, 4, T);
+        ctx.fillStyle = '#6bb840';
+        ctx.fillRect(x + T - 3, y + 6, 2, 2); ctx.fillRect(x + T - 2, y + 18, 2, 2); ctx.fillRect(x + T - 3, y + 28, 2, 2);
+        // Thin sand line
         ctx.fillStyle = '#d4b896';
-        ctx.fillRect(x + 19, y, 2, T);
-        ctx.fillStyle = '#c4a886';
-        ctx.fillRect(x + 18, y, 1, T);
-        ctx.fillStyle = 'rgba(235,245,251,0.6)';
-        for (let wy = 0; wy < T; wy += 3) ctx.fillRect(x + 17, y + wy, 1, 2);
+        ctx.fillRect(x + T - 5, y, 1, T);
+        // Foam dots
+        ctx.fillStyle = 'rgba(235,245,251,0.5)';
+        for (let wy = 0; wy < T; wy += 4) ctx.fillRect(x + T - 6, y + wy, 1, 2);
     }
 
     drawWaterCornerTL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
+        // Thin grass L-shape (4px wide)
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y, T, 12);
-        ctx.fillRect(x, y, 12, T);
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillRect(x, y, 4, T);
         ctx.fillStyle = '#6bb840';
-        ctx.fillRect(x + 2, y + 2, 2, 2); ctx.fillRect(x + 6, y + 4, 2, 2);
-        ctx.fillRect(x + 2, y + 16, 2, 2); ctx.fillRect(x + 4, y + 24, 2, 2);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x + 16, y + 2, 2, 2); ctx.fillRect(x + 24, y + 4, 2, 2);
+        ctx.fillRect(x + 1, y + 1, 2, 2);
         // Sand corner arc
         ctx.fillStyle = '#d4b896';
-        for (let i = 0; i < 10; i++) {
-            const a = (Math.PI / 2) * (i / 9);
-            const cx2 = 12 + Math.round(Math.cos(a) * 2);
-            const cy2 = 12 + Math.round(Math.sin(a) * 2);
-            ctx.fillRect(x + cx2, y + cy2, 2, 2);
-        }
+        ctx.fillRect(x + 4, y + 4, 1, 1);
         ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 13, y + 13, 3, 1);
-        ctx.fillRect(x + 13, y + 13, 1, 3);
+        ctx.fillRect(x + 5, y + 5, 2, 1);
+        ctx.fillRect(x + 5, y + 5, 1, 2);
     }
 
     drawWaterCornerTR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y, T, 12);
-        ctx.fillRect(x + 20, y, 12, T);
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillRect(x + T - 4, y, 4, T);
         ctx.fillStyle = '#6bb840';
-        ctx.fillRect(x + 22, y + 2, 2, 2); ctx.fillRect(x + 24, y + 16, 2, 2);
-        ctx.fillRect(x + 8, y + 4, 2, 2); ctx.fillRect(x + 22, y + 24, 2, 2);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x + 14, y + 2, 2, 2);
+        ctx.fillRect(x + T - 3, y + 1, 2, 2);
         ctx.fillStyle = '#d4b896';
-        for (let i = 0; i < 10; i++) {
-            const a = (Math.PI / 2) * (i / 9);
-            const cx2 = 19 - Math.round(Math.cos(a) * 2);
-            const cy2 = 12 + Math.round(Math.sin(a) * 2);
-            ctx.fillRect(x + cx2, y + cy2, 2, 2);
-        }
+        ctx.fillRect(x + T - 5, y + 4, 1, 1);
         ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 16, y + 13, 3, 1);
-        ctx.fillRect(x + 18, y + 13, 1, 3);
+        ctx.fillRect(x + T - 7, y + 5, 2, 1);
+        ctx.fillRect(x + T - 6, y + 5, 1, 2);
     }
 
     drawWaterCornerBL(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y + 20, T, 12);
-        ctx.fillRect(x, y, 12, T);
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillRect(x, y, 4, T);
         ctx.fillStyle = '#6bb840';
-        ctx.fillRect(x + 2, y + 22, 2, 2); ctx.fillRect(x + 6, y + 26, 2, 2);
-        ctx.fillRect(x + 2, y + 8, 2, 2); ctx.fillRect(x + 4, y + 16, 2, 2);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x + 16, y + 24, 2, 2);
+        ctx.fillRect(x + 1, y + T - 3, 2, 2);
         ctx.fillStyle = '#d4b896';
-        for (let i = 0; i < 10; i++) {
-            const a = (Math.PI / 2) * (i / 9);
-            const cx2 = 12 + Math.round(Math.cos(a) * 2);
-            const cy2 = 19 - Math.round(Math.sin(a) * 2);
-            ctx.fillRect(x + cx2, y + cy2, 2, 2);
-        }
+        ctx.fillRect(x + 4, y + T - 5, 1, 1);
         ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 13, y + 18, 3, 1);
-        ctx.fillRect(x + 13, y + 16, 1, 3);
+        ctx.fillRect(x + 5, y + T - 7, 2, 1);
+        ctx.fillRect(x + 5, y + T - 7, 1, 2);
     }
 
     drawWaterCornerBR(ctx, x, y, T) {
         this._drawWaterBase(ctx, x, y, T, '#2678a0', 0);
         ctx.fillStyle = '#7ec850';
-        ctx.fillRect(x, y + 20, T, 12);
-        ctx.fillRect(x + 20, y, 12, T);
+        ctx.fillRect(x, y + T - 4, T, 4);
+        ctx.fillRect(x + T - 4, y, 4, T);
         ctx.fillStyle = '#6bb840';
-        ctx.fillRect(x + 22, y + 22, 2, 2); ctx.fillRect(x + 24, y + 8, 2, 2);
-        ctx.fillRect(x + 8, y + 24, 2, 2); ctx.fillRect(x + 22, y + 16, 2, 2);
-        ctx.fillStyle = '#5ab038';
-        ctx.fillRect(x + 14, y + 24, 2, 2);
+        ctx.fillRect(x + T - 3, y + T - 3, 2, 2);
         ctx.fillStyle = '#d4b896';
-        for (let i = 0; i < 10; i++) {
-            const a = (Math.PI / 2) * (i / 9);
-            const cx2 = 19 - Math.round(Math.cos(a) * 2);
-            const cy2 = 19 - Math.round(Math.sin(a) * 2);
-            ctx.fillRect(x + cx2, y + cy2, 2, 2);
-        }
+        ctx.fillRect(x + T - 5, y + T - 5, 1, 1);
         ctx.fillStyle = 'rgba(235,245,251,0.5)';
-        ctx.fillRect(x + 16, y + 18, 3, 1);
-        ctx.fillRect(x + 18, y + 16, 1, 3);
+        ctx.fillRect(x + T - 7, y + T - 7, 2, 1);
+        ctx.fillRect(x + T - 6, y + T - 7, 1, 2);
     }
 
     drawLilyPad(ctx, x, y, T) {
