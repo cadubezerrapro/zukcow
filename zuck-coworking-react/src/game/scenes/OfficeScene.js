@@ -72,15 +72,18 @@ export class OfficeScene extends Phaser.Scene {
         this.frontLayer = this.map.createLayer('furniture_front', tileset, 0, 0);
         if (this.frontLayer) {
             this.frontLayer.setDepth(20);
+        }
 
-            // Copy furniture_front tiles to wallsLayer for collision
-            // (frontLayer is visual-only for depth; wallsLayer handles all physics)
+        // Create invisible static colliders for furniture_front tiles
+        // (frontLayer handles depth rendering; these bodies handle physics)
+        this._frontColliders = this.physics.add.staticGroup();
+        if (this.frontLayer) {
             this.frontLayer.forEachTile(tile => {
                 if (tile.index > 0) {
-                    const placed = this.wallsLayer.putTileAt(tile.index, tile.x, tile.y);
-                    if (placed) {
-                        placed.setCollision(true, true, true, true);
-                    }
+                    const worldX = tile.pixelX + tile.width / 2;
+                    const worldY = tile.pixelY + tile.height / 2;
+                    const body = this.add.zone(worldX, worldY, tile.width, tile.height);
+                    this._frontColliders.add(body);
                 }
             });
         }
@@ -289,6 +292,7 @@ export class OfficeScene extends Phaser.Scene {
 
         this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.physics.add.collider(this.player, this.wallsLayer);
+        this.physics.add.collider(this.player, this._frontColliders);
 
         this.createAnimations(this.avatarColor);
 
