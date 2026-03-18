@@ -74,23 +74,14 @@ export class OfficeScene extends Phaser.Scene {
             this.frontLayer.setDepth(20);
         }
 
-        // Create invisible static colliders for furniture_front tiles
-        // (frontLayer handles depth rendering; these bodies handle physics)
+        // Placeholder — colliders will be built AFTER all edits are applied
         this._frontColliders = this.physics.add.staticGroup();
-        if (this.frontLayer) {
-            this.frontLayer.forEachTile(tile => {
-                if (tile.index > 0) {
-                    const worldX = tile.pixelX + tile.width / 2;
-                    const worldY = tile.pixelY + tile.height / 2;
-                    const body = this.add.zone(worldX, worldY, tile.width, tile.height);
-                    this._frontColliders.add(body);
-                }
-            });
-        }
 
         this.autoRotateChairs();
         this.resetNonRotatableTiles();
         this.applyMapEdits();
+        // Build colliders from current frontLayer state (after localStorage edits)
+        this.rebuildFrontColliders();
         this.addRoomLabels();
 
         // Furniture multiplayer sync
@@ -106,13 +97,31 @@ export class OfficeScene extends Phaser.Scene {
         });
     }
 
+    /**
+     * Destroy and rebuild all invisible collision bodies for frontLayer tiles.
+     * Must be called after any operation that adds/removes frontLayer tiles.
+     */
+    rebuildFrontColliders() {
+        if (this._frontColliders) {
+            this._frontColliders.clear(true, true);
+        }
+        if (this.frontLayer) {
+            this.frontLayer.forEachTile(tile => {
+                if (tile.index > 0) {
+                    const worldX = tile.pixelX + tile.width / 2;
+                    const worldY = tile.pixelY + tile.height / 2;
+                    const body = this.add.zone(worldX, worldY, tile.width, tile.height);
+                    this._frontColliders.add(body);
+                }
+            });
+        }
+    }
+
     async loadServerFurniture() {
         try {
             const result = await getFurnitureEdits(0);
             if (result.success && result.edits.length > 0) {
-                const myId = window.USER_ID || localStorage.getItem('cowork_user_id') || '';
                 result.edits.forEach(edit => {
-                    // Apply all edits (including own — they might come from other sessions)
                     this.applyRemoteEdit(edit);
                 });
                 this._furnitureVersion = result.version;
@@ -121,6 +130,8 @@ export class OfficeScene extends Phaser.Scene {
         } catch (e) {
             console.warn('Failed to load server furniture:', e);
         }
+        // Rebuild colliders after all server edits are applied
+        this.rebuildFrontColliders();
     }
 
     async fetchNewFurnitureEdits() {
@@ -129,12 +140,13 @@ export class OfficeScene extends Phaser.Scene {
             if (result.success && result.edits.length > 0) {
                 const myId = window.USER_ID || localStorage.getItem('cowork_user_id') || '';
                 result.edits.forEach(edit => {
-                    // Skip own edits (already applied locally)
                     if (edit.by === myId) return;
                     this.applyRemoteEdit(edit);
                 });
                 this._furnitureVersion = result.version;
                 this._furnitureTotal = result.total;
+                // Rebuild colliders after remote edits
+                this.rebuildFrontColliders();
             }
         } catch (e) {
             console.warn('Failed to fetch new furniture edits:', e);
@@ -390,6 +402,7 @@ export class OfficeScene extends Phaser.Scene {
         this._removeFurnitureTile = (tileX, tileY, layer) => {
             if (layer === 'front' && this.frontLayer) {
                 this.frontLayer.removeTileAt(tileX, tileY);
+                this.rebuildFrontColliders();
             } else {
                 this.wallsLayer.removeTileAt(tileX, tileY);
             }
