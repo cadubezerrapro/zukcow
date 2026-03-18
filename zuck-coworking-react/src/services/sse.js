@@ -99,9 +99,9 @@ class SSEService {
             }
         };
 
-        // Poll every 500ms — interpolation handles smoothness
+        // Poll every 300ms — interpolation handles smoothness
         poll();
-        this.pollInterval = setInterval(poll, 500);
+        this.pollInterval = setInterval(poll, 300);
     }
 
     startSSE(spaceId) {

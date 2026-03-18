@@ -883,12 +883,12 @@ export class OfficeScene extends Phaser.Scene {
                     rp.kartGfx.setDepth(11);
                     rp.kartGfx.setOrigin(0.5, 0.5);
                 }
-                // Smooth interpolation — use lerp for kart (smoother than speed-based)
+                // Smooth interpolation — use lerp for kart
                 if (dist > 1000) {
                     rp.sprite.x = rp.targetX;
                     rp.sprite.y = rp.targetY;
                 } else if (dist > 2) {
-                    const lerpFactor = 0.15; // smooth lerp
+                    const lerpFactor = 0.3;
                     rp.sprite.x += dx * lerpFactor;
                     rp.sprite.y += dy * lerpFactor;
                 } else {
@@ -928,7 +928,7 @@ export class OfficeScene extends Phaser.Scene {
                             rp.sprite.x = rp.targetX;
                             rp.sprite.y = rp.targetY;
                         } else {
-                            const lerpFactor = 0.15;
+                            const lerpFactor = 0.25;
                             rp.sprite.x += dx * lerpFactor;
                             rp.sprite.y += dy * lerpFactor;
                         }
