@@ -369,14 +369,10 @@ setTile(ground, GID.STONE_PATH, 5, 35);
 setTile(ground, GID.STONE_PATH, 5, 36);
 
 // Lake top-right (rows 2-7, cols 55-70)
-// Water edges
-fillRect(ground, GID.WATER_DEEP, 3, 57, 6, 68);
-fillRect(ground, GID.WATER_SHALLOW, 2, 57, 2, 68); // top shallow band
-fillRect(ground, GID.WATER_SHALLOW, 7, 57, 7, 68); // bottom shallow band
-fillRect(ground, GID.WATER_SHALLOW, 3, 55, 6, 56); // left shallow band
-fillRect(ground, GID.WATER_SHALLOW, 3, 69, 6, 70); // right shallow band
-// Edges
-for (let c = 57; c <= 68; c++) {
+// Fill entire interior with deep water (edges will overwrite perimeter)
+fillRect(ground, GID.WATER_DEEP, 2, 55, 7, 70);
+// Edges (overwrite perimeter deep tiles)
+for (let c = 56; c <= 69; c++) {
   setTile(ground, GID.WATER_EDGE_TOP, 2, c);
   setTile(ground, GID.WATER_EDGE_BOTTOM, 7, c);
 }
@@ -801,8 +797,8 @@ for (let c = 42; c <= 58; c += 4) {
   fillRect(ground, GID.STONE_PATH, 45, c, 50, c);
 }
 
-// Second small pond (rows 48-52, cols 10-18)
-fillRect(ground, GID.WATER_DEEP, 49, 12, 51, 16);
+// Second small pond (rows 48-52, cols 11-17)
+fillRect(ground, GID.WATER_DEEP, 48, 11, 52, 17);
 for (let c = 12; c <= 16; c++) {
   setTile(ground, GID.WATER_EDGE_TOP, 48, c);
   setTile(ground, GID.WATER_EDGE_BOTTOM, 52, c);

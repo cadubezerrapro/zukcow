@@ -2937,51 +2937,40 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawWaterDeep(ctx, x, y, T) {
-        // Deep water — harmonized with edge tiles (#2980b9 base)
-        ctx.fillStyle = '#2272a3';
+        // Deep water — SAME base color as edge tiles (#2678a0) for seamless blending
+        this._drawWaterBase(ctx, x, y, T, '#2678a0', 2);
+        // Subtle depth darkening
+        ctx.fillStyle = 'rgba(0,15,30,0.1)';
         ctx.fillRect(x, y, T, T);
-        // Subtle depth gradient
-        ctx.fillStyle = 'rgba(0,0,0,0.05)';
-        ctx.fillRect(x, y + T / 2, T, T / 2);
-        // Wave lines
-        ctx.fillStyle = '#2d8ab8';
-        for (let wy = 3; wy < T; wy += 5) {
-            for (let wx = 0; wx < T; wx++) {
-                const wave = Math.sin((wx + wy * 2) * 0.35) * 1.2;
-                const py = Math.round(wy + wave);
-                if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 1, 1);
-            }
-        }
-        // Lighter wave highlights
-        ctx.fillStyle = 'rgba(60,160,210,0.4)';
-        for (let wy = 1; wy < T; wy += 7) {
+        // Extra wave highlights
+        ctx.fillStyle = 'rgba(70,170,220,0.2)';
+        for (let wy = 2; wy < T; wy += 6) {
             for (let wx = 0; wx < T; wx += 2) {
-                const wave = Math.cos((wx + wy) * 0.3) * 1;
+                const wave = Math.sin((wx + wy * 2) * 0.3) * 1;
                 const py = Math.round(wy + wave);
                 if (py >= 0 && py < T) ctx.fillRect(x + wx, y + py, 2, 1);
             }
         }
         // Sparkles
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        ctx.fillStyle = 'rgba(255,255,255,0.35)';
         ctx.fillRect(x + 6, y + 4, 1, 1);
         ctx.fillRect(x + 22, y + 12, 1, 1);
         ctx.fillRect(x + 14, y + 24, 1, 1);
         ctx.fillRect(x + 28, y + 8, 1, 1);
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(x + 10, y + 18, 1, 1);
-        ctx.fillRect(x + 26, y + 26, 1, 1);
     }
 
     drawWaterShallow(ctx, x, y, T) {
-        // Shallow water — slightly lighter than deep, close to edge base
-        ctx.fillStyle = '#2e8fc2';
+        // Shallow water — same base as deep/edge for seamless blending
+        this._drawWaterBase(ctx, x, y, T, '#2678a0', 4);
+        // Slightly lighter tint (shallower = more light)
+        ctx.fillStyle = 'rgba(60,180,230,0.08)';
         ctx.fillRect(x, y, T, T);
         // Ground hints
-        ctx.fillStyle = 'rgba(42,112,80,0.08)';
+        ctx.fillStyle = 'rgba(42,112,80,0.06)';
         ctx.fillRect(x + 4, y + 12, 5, 3);
         ctx.fillRect(x + 18, y + 22, 4, 3);
         ctx.fillRect(x + 10, y + 4, 4, 3);
-        // Wave lines
+        // Wave lines (reuse existing code below)
         ctx.fillStyle = '#4aa5d4';
         for (let wy = 2; wy < T; wy += 5) {
             for (let wx = 0; wx < T; wx++) {
