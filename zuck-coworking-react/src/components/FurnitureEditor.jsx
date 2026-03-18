@@ -568,7 +568,7 @@ export default function FurnitureEditor({
                     }}
                 >
                     <div className="bg-black/85 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
-                        {TILE_NAMES[hoveredFurniture.tileId] || `Tile ${hoveredFurniture.tileId}`}
+                        {TILE_NAMES[hoveredFurniture.tileId - 1] || TILE_NAMES[hoveredFurniture.tileId] || `Tile ${hoveredFurniture.tileId}`}
                     </div>
                 </div>
             )}
@@ -578,7 +578,7 @@ export default function FurnitureEditor({
                 <div className="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 pointer-events-auto">
                     <div className="bg-gray-900/95 border border-gray-600 rounded-xl p-2 flex items-center gap-2 shadow-2xl backdrop-blur-sm">
                         <div className="text-amber-300 text-sm px-3 font-semibold">
-                            {TILE_NAMES[selectedFurniture.tileId] || `Tile ${selectedFurniture.tileId}`}
+                            {TILE_NAMES[selectedFurniture.tileId - 1] || TILE_NAMES[selectedFurniture.tileId] || `Tile ${selectedFurniture.tileId}`}
                         </div>
                         <div className="w-px h-7 bg-gray-600" />
                         <button

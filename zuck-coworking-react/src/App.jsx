@@ -605,7 +605,7 @@ export default function App() {
                     }
                     setSelectedFurniture(null);
                     setIsMovingFurniture(true);
-                    eventBus.emit('furniture:add_new', { tileId });
+                    eventBus.emit('furniture:add_new', { tileId: tileId + 1 }); // +1: catalog uses 0-based, map uses GID (firstgid=1)
                 }}
             />
         </div>

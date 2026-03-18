@@ -170,7 +170,7 @@ export class OfficeScene extends Phaser.Scene {
         // Reset rotation/flip on tiles that shouldn't be rotated
         const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36, 82, 83, 89, 93, 107, 108, 109, 110]);
         this.wallsLayer.forEachTile(tile => {
-            if (tile.index >= 23 && tile.index <= 142 && !ROTATABLE.has(tile.index)) {
+            if (tile.index >= 23 && !ROTATABLE.has(tile.index)) {
                 tile.rotation = 0;
                 tile.flipX = false;
                 tile.flipY = false;
@@ -396,13 +396,26 @@ export class OfficeScene extends Phaser.Scene {
         };
 
         // Helper: find a furniture tile at world coords, checking both layers
+        // Note: tile.index = GID (map uses firstgid=1, so GID = tileset_index + 1)
         this._getFurnitureTileAt = (worldX, worldY) => {
-            // Furniture tiles: IDs >= 22 (desk) and not walls/structure
-            const STRUCTURE_IDS = new Set([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75]);
+            // Structure GIDs to EXCLUDE from selection (walls, floors, water, outdoor ground)
+            // These are NOT furniture and should never be selectable
+            const STRUCTURE_GIDS = new Set([
+                // Floors (GID 1-15): hallway, office, workspace, lounge, meeting, etc
+                1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+                // Wall outer variants (GID 1, 20-21)
+                20, 21,
+                // Wall/corner structure (GID 41-52)
+                41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52,
+                // Water tiles (GID 53-64)
+                53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
+                // Outdoor ground (GID 65-66, 73-76)
+                65, 66, 73, 74, 75, 76,
+            ]);
 
             // Check wallsLayer first
             const wallTile = this.wallsLayer.getTileAtWorldXY(worldX, worldY);
-            if (wallTile && wallTile.index > 0 && !STRUCTURE_IDS.has(wallTile.index)) {
+            if (wallTile && wallTile.index > 0 && !STRUCTURE_GIDS.has(wallTile.index)) {
                 wallTile._layer = 'walls';
                 return wallTile;
             }
