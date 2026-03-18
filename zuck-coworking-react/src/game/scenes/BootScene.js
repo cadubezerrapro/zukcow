@@ -21,7 +21,25 @@ export class BootScene extends Phaser.Scene {
     create() {
         this.generateTileset();
         this.generateCharacterSprites();
+        this.generateKartSprite();
+        this.generateSmokeParticle();
         this.scene.start('OfficeScene');
+    }
+
+    generateKartSprite() {
+        const kartCanvas = this.textures.createCanvas('kart_sprite', 64, 64);
+        const kctx = kartCanvas.context;
+        kctx.scale(2, 2);
+        this.drawKart(kctx, 0, 0, 32);
+        kartCanvas.refresh();
+    }
+
+    generateSmokeParticle() {
+        const gfx = this.make.graphics({ x: 0, y: 0, add: false });
+        gfx.fillStyle(0xffffff, 1);
+        gfx.fillCircle(4, 4, 4);
+        gfx.generateTexture('smoke_particle', 8, 8);
+        gfx.destroy();
     }
 
     // ==========================================

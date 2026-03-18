@@ -674,6 +674,24 @@ export class OfficeScene extends Phaser.Scene {
         } else {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
         }
+
+        // Update kart sprite + smoke position
+        if (this.isInKart && this.kartSprite) {
+            this.kartSprite.setPosition(this.player.x, this.player.y);
+            if (this.kartSmoke) {
+                const moving = vx !== 0 || vy !== 0;
+                this.kartSmoke.emitting = moving;
+                // Position smoke behind the kart based on direction
+                let sx = this.player.x;
+                let sy = this.player.y;
+                const d = this.playerDirection;
+                if (d === 'up') sy += 32;
+                else if (d === 'down') sy -= 32;
+                else if (d === 'left') sx += 32;
+                else if (d === 'right') sx -= 32;
+                this.kartSmoke.setPosition(sx, sy);
+            }
+        }
     }
 
     updateNameLabel() {
@@ -995,10 +1013,26 @@ export class OfficeScene extends Phaser.Scene {
             this.player.setScale(2, 1.6);
             this.player.setOffset(6, 40);
             this.player.setDepth(10);
-            // Remove the kart tile from the map (player "picked it up")
+            // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
+            // Create kart sprite that follows player
+            this.kartSprite = this.add.image(px, py, 'kart_sprite');
+            this.kartSprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
+            this.kartSprite.setDepth(9); // Just behind player
+            // Create smoke particle emitter (behind kart)
+            this.kartSmoke = this.add.particles(px, py + 30, 'smoke_particle', {
+                speed: { min: 10, max: 30 },
+                scale: { start: 0.8, end: 0 },
+                alpha: { start: 0.5, end: 0 },
+                lifespan: 500,
+                frequency: 60,
+                quantity: 1,
+                tint: 0x999999,
+                emitting: false
+            });
+            this.kartSmoke.setDepth(8);
         } else {
             // Regular seat: disable collision, squish sprite
             if (this.player.body) {
@@ -1036,6 +1070,9 @@ export class OfficeScene extends Phaser.Scene {
         this.player.setDepth(10);
 
         if (wasInKart) {
+            // Destroy kart visual + smoke
+            if (this.kartSprite) { this.kartSprite.destroy(); this.kartSprite = null; }
+            if (this.kartSmoke) { this.kartSmoke.destroy(); this.kartSmoke = null; }
             // Place the kart tile back at player's current position
             const tileX = Math.floor(this.player.x / TILE_SIZE);
             const tileY = Math.floor(this.player.y / TILE_SIZE);
