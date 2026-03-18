@@ -1296,45 +1296,64 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawDoor(ctx, x, y, T) {
-        // Modern glass door — transparent bg (hallway shows through)
-        // Aluminum frame outer
-        ctx.fillStyle = '#8b9bb0';
-        ctx.fillRect(x + 4, y + 0, 24, 31);
-        // Door body - glass
-        ctx.fillStyle = 'rgba(130,180,230,0.3)';
-        ctx.fillRect(x + 6, y + 1, 20, 28);
-        // Glass panels (two panes)
-        ctx.fillStyle = 'rgba(160,200,240,0.25)';
-        ctx.fillRect(x + 7, y + 2, 8, 26);
-        ctx.fillRect(x + 17, y + 2, 8, 26);
-        // Frame divider
-        ctx.fillStyle = '#8b9bb0';
-        ctx.fillRect(x + 15, y + 0, 2, 30);
-        // Reflections on glass
-        ctx.fillStyle = 'rgba(255,255,255,0.2)';
-        ctx.fillRect(x + 8, y + 3, 2, 12);
-        ctx.fillRect(x + 18, y + 5, 2, 10);
+        // Modern full-width glass sliding door (each tile = one panel of a double door)
+        // Floor threshold base
+        ctx.fillStyle = '#4a5568';
+        ctx.fillRect(x, y + T - 3, T, 3);
+        ctx.fillStyle = '#5a6a7e';
+        ctx.fillRect(x, y + T - 3, T, 1);
+
+        // Top rail (header beam)
+        ctx.fillStyle = '#5a6a7e';
+        ctx.fillRect(x, y, T, 4);
+        ctx.fillStyle = '#6b7d92';
+        ctx.fillRect(x, y, T, 2);
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(x + 10, y + 4, 1, 8);
-        ctx.fillRect(x + 20, y + 6, 1, 7);
-        // LED strip at top
-        ctx.fillStyle = 'rgba(100,200,255,0.4)';
-        ctx.fillRect(x + 6, y + 0, 20, 1);
-        ctx.fillStyle = 'rgba(100,200,255,0.15)';
-        ctx.fillRect(x + 6, y + 1, 20, 2);
-        // Handle bar (horizontal chrome)
-        ctx.fillStyle = '#c0cdd8';
-        ctx.fillRect(x + 19, y + 14, 5, 2);
+        ctx.fillRect(x, y, T, 1);
+
+        // Frame posts (left and right edges)
+        ctx.fillStyle = '#6b7d92';
+        ctx.fillRect(x, y + 3, 2, T - 6);
+        ctx.fillRect(x + T - 2, y + 3, 2, T - 6);
+        // Post highlight
+        ctx.fillStyle = 'rgba(255,255,255,0.12)';
+        ctx.fillRect(x, y + 3, 1, T - 6);
+        ctx.fillRect(x + T - 2, y + 3, 1, T - 6);
+
+        // Glass panel (fills most of tile)
+        ctx.fillStyle = 'rgba(120,170,220,0.35)';
+        ctx.fillRect(x + 2, y + 4, T - 4, T - 7);
+
+        // Glass gradient effect (darker at bottom)
+        ctx.fillStyle = 'rgba(80,130,180,0.15)';
+        ctx.fillRect(x + 2, y + T / 2, T - 4, T / 2 - 7);
+
+        // Reflection streaks (diagonal light)
+        ctx.fillStyle = 'rgba(255,255,255,0.18)';
+        ctx.fillRect(x + 4, y + 5, 3, T - 14);
+        ctx.fillStyle = 'rgba(255,255,255,0.10)';
+        ctx.fillRect(x + 8, y + 7, 2, T - 18);
+        ctx.fillRect(x + T - 10, y + 6, 2, T - 16);
+        // Subtle wide reflection
+        ctx.fillStyle = 'rgba(255,255,255,0.06)';
+        ctx.fillRect(x + 3, y + 5, 8, T - 13);
+
+        // Center divider line (glass seam)
+        ctx.fillStyle = 'rgba(90,110,130,0.4)';
+        ctx.fillRect(x + T / 2 - 1, y + 4, 1, T - 7);
+
+        // Handle (chrome vertical bar)
+        ctx.fillStyle = '#b0bec5';
+        ctx.fillRect(x + T - 7, y + 12, 2, 8);
         ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillRect(x + 19, y + 14, 5, 1);
-        // Second handle
-        ctx.fillStyle = '#c0cdd8';
-        ctx.fillRect(x + 8, y + 14, 5, 2);
-        ctx.fillStyle = 'rgba(255,255,255,0.4)';
-        ctx.fillRect(x + 8, y + 14, 5, 1);
-        // Threshold
-        ctx.fillStyle = '#6b7a8e';
-        ctx.fillRect(x + 4, y + 30, 24, 2);
+        ctx.fillRect(x + T - 7, y + 12, 1, 8);
+        // Handle shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        ctx.fillRect(x + T - 5, y + 13, 1, 7);
+
+        // LED accent at top of glass
+        ctx.fillStyle = 'rgba(100,200,255,0.3)';
+        ctx.fillRect(x + 2, y + 4, T - 4, 1);
     }
 
     // --- Furniture tiles ---
