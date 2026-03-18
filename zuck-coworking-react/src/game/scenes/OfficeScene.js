@@ -824,11 +824,9 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show small player + kart sprite
+            // Remote player in kart: hide player, show kart sprite with built-in driver
             if (rp.isInKart) {
-                rp.sprite.setVisible(true);
-                rp.sprite.setScale(0.7);
-                rp.sprite.setDepth(12);
+                rp.sprite.setVisible(false);
                 // Create kart sprite if not yet
                 if (!rp.kartGfx) {
                     rp.kartGfx = this.add.sprite(rp.sprite.x, rp.sprite.y, 'kart_sprite');
@@ -1050,10 +1048,8 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Show player as small driver inside kart
-            this.player.setVisible(true);
-            this.player.setScale(0.7);
-            this.player.setDepth(12);
+            // Hide player — driver is drawn into kart_sprite texture
+            this.player.setVisible(false);
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);

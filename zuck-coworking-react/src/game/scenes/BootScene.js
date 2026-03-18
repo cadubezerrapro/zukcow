@@ -26,11 +26,22 @@ export class BootScene extends Phaser.Scene {
     }
 
     generateKartSprite() {
-        // Create standalone kart texture identical to the tile
+        // Create standalone kart texture with a driver in the cockpit
         const canvas = this.textures.createCanvas('kart_sprite', 64, 64);
         const ctx = canvas.context;
         ctx.scale(2, 2);
         this.drawKart(ctx, 0, 0, 32);
+        // Draw small driver in cockpit (helmet + head)
+        // Cockpit is at x+9,y+14 size 14x8 in logical coords
+        // Driver helmet (dark)
+        ctx.fillStyle = '#1e40af';
+        ctx.fillRect(13, 15, 6, 5);
+        // Visor
+        ctx.fillStyle = '#60a5fa';
+        ctx.fillRect(14, 16, 4, 2);
+        // Skin below helmet
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillRect(14, 18, 4, 2);
         canvas.refresh();
     }
 
