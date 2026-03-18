@@ -675,22 +675,10 @@ export class OfficeScene extends Phaser.Scene {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
         }
 
-        // Update kart sprite + smoke position
+        // Update kart visual + smoke
         if (this.isInKart && this.kartSprite) {
-            this.kartSprite.setPosition(this.player.x, this.player.y);
-            if (this.kartSmoke) {
-                const moving = vx !== 0 || vy !== 0;
-                this.kartSmoke.emitting = moving;
-                // Position smoke behind the kart based on direction
-                let sx = this.player.x;
-                let sy = this.player.y;
-                const d = this.playerDirection;
-                if (d === 'up') sy += 32;
-                else if (d === 'down') sy -= 32;
-                else if (d === 'left') sx += 32;
-                else if (d === 'right') sx -= 32;
-                this.kartSmoke.setPosition(sx, sy);
-            }
+            this._drawKartGraphics(this.kartSprite, this.player.x, this.player.y);
+            this._updateKartSmoke(vx !== 0 || vy !== 0);
         }
     }
 
@@ -1017,22 +1005,12 @@ export class OfficeScene extends Phaser.Scene {
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
-            // Create kart sprite that follows player
-            this.kartSprite = this.add.image(px, py, 'kart_sprite');
-            this.kartSprite.setDisplaySize(TILE_SIZE, TILE_SIZE);
-            this.kartSprite.setDepth(9); // Just behind player
-            // Create smoke particle emitter (behind kart)
-            this.kartSmoke = this.add.particles(px, py + 30, 'smoke_particle', {
-                speed: { min: 10, max: 30 },
-                scale: { start: 0.8, end: 0 },
-                alpha: { start: 0.5, end: 0 },
-                lifespan: 500,
-                frequency: 60,
-                quantity: 1,
-                tint: 0x999999,
-                emitting: false
-            });
-            this.kartSmoke.setDepth(8);
+            // Create kart visual using Graphics (guaranteed to work)
+            this.kartSprite = this.add.graphics();
+            this.kartSprite.setDepth(9);
+            this._drawKartGraphics(this.kartSprite, px, py);
+            // Smoke particles array (manual approach for reliability)
+            this.kartSmokeParticles = [];
         } else {
             // Regular seat: disable collision, squish sprite
             if (this.player.body) {
@@ -1072,7 +1050,10 @@ export class OfficeScene extends Phaser.Scene {
         if (wasInKart) {
             // Destroy kart visual + smoke
             if (this.kartSprite) { this.kartSprite.destroy(); this.kartSprite = null; }
-            if (this.kartSmoke) { this.kartSmoke.destroy(); this.kartSmoke = null; }
+            if (this.kartSmokeParticles) {
+                this.kartSmokeParticles.forEach(p => p.destroy());
+                this.kartSmokeParticles = null;
+            }
             // Place the kart tile back at player's current position
             const tileX = Math.floor(this.player.x / TILE_SIZE);
             const tileY = Math.floor(this.player.y / TILE_SIZE);
@@ -1116,6 +1097,81 @@ export class OfficeScene extends Phaser.Scene {
                     tile.index = targetGID;
                 }
             });
+        }
+    }
+
+    _drawKartGraphics(gfx, cx, cy) {
+        gfx.clear();
+        const x = cx - TILE_SIZE / 2;
+        const y = cy - TILE_SIZE / 2;
+        // Shadow
+        gfx.fillStyle(0x000000, 0.2);
+        gfx.fillEllipse(cx, y + 56, 56, 16);
+        // Back wheels
+        gfx.fillStyle(0x1a1a2e, 1);
+        gfx.fillRect(x + 6, y + 44, 10, 12);
+        gfx.fillRect(x + 48, y + 44, 10, 12);
+        // Body (red)
+        gfx.fillStyle(0xdc2626, 1);
+        gfx.fillRect(x + 12, y + 24, 40, 32);
+        gfx.fillRect(x + 16, y + 20, 32, 4);
+        // Darker side
+        gfx.fillStyle(0xb91c1c, 1);
+        gfx.fillRect(x + 12, y + 44, 40, 8);
+        gfx.fillRect(x + 48, y + 24, 4, 28);
+        // Cockpit
+        gfx.fillStyle(0x1e293b, 1);
+        gfx.fillRect(x + 18, y + 28, 28, 16);
+        gfx.fillStyle(0x334155, 1);
+        gfx.fillRect(x + 22, y + 30, 20, 12);
+        // Steering wheel
+        gfx.fillStyle(0x6b7280, 1);
+        gfx.fillRect(x + 28, y + 24, 8, 4);
+        // Front wheels
+        gfx.fillStyle(0x1a1a2e, 1);
+        gfx.fillRect(x + 10, y + 20, 8, 8);
+        gfx.fillRect(x + 46, y + 20, 8, 8);
+        // Racing stripe
+        gfx.fillStyle(0xf8fafc, 1);
+        gfx.fillRect(x + 30, y + 20, 4, 36);
+        // Headlights
+        gfx.fillStyle(0xfde047, 1);
+        gfx.fillRect(x + 16, y + 20, 4, 2);
+        gfx.fillRect(x + 44, y + 20, 4, 2);
+        // Exhaust pipes
+        gfx.fillStyle(0x6b7280, 1);
+        gfx.fillRect(x + 24, y + 54, 4, 4);
+        gfx.fillRect(x + 36, y + 54, 4, 4);
+    }
+
+    _updateKartSmoke(isMoving) {
+        if (!this.kartSmokeParticles) return;
+        // Spawn new smoke particles when moving
+        if (isMoving && this.kartSmokeParticles.length < 8) {
+            const dir = this.playerDirection;
+            let sx = this.player.x;
+            let sy = this.player.y;
+            // Position behind the kart
+            if (dir === 'up') sy += 34;
+            else if (dir === 'down') sy -= 34;
+            else if (dir === 'left') sx += 34;
+            else if (dir === 'right') sx -= 34;
+            const puff = this.add.circle(sx + (Math.random() - 0.5) * 10, sy + (Math.random() - 0.5) * 10, 6, 0x999999, 0.5);
+            puff.setDepth(8);
+            puff._life = 0;
+            this.kartSmokeParticles.push(puff);
+        }
+        // Update existing particles
+        for (let i = this.kartSmokeParticles.length - 1; i >= 0; i--) {
+            const p = this.kartSmokeParticles[i];
+            p._life += 1;
+            p.setAlpha(0.5 - p._life * 0.05);
+            p.setScale(1 + p._life * 0.1);
+            p.y -= 0.5;
+            if (p._life > 10) {
+                p.destroy();
+                this.kartSmokeParticles.splice(i, 1);
+            }
         }
     }
 
