@@ -681,9 +681,12 @@ export class OfficeScene extends Phaser.Scene {
             this.player.anims.play(`${animKey}_idle_${this.playerDirection}`, true);
         }
 
-        // Update kart sprite position to follow player
+        // Update kart sprite position + rotation to follow player direction
         if (this.isInKart && this.kartSprite) {
             this.kartSprite.setPosition(this.player.x, this.player.y);
+            // Rotate kart based on direction (tile faces down by default)
+            const dirAngles = { down: 0, left: Math.PI / 2, up: Math.PI, right: -Math.PI / 2 };
+            this.kartSprite.setRotation(dirAngles[this.playerDirection] || 0);
         }
     }
 
@@ -819,15 +822,16 @@ export class OfficeScene extends Phaser.Scene {
             const dy = rp.targetY - rp.sprite.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
 
-            // Remote player in kart: show kart sprite, hide player sprite
+            // Remote player in kart: show kart sprite + smaller player on top
             if (rp.isInKart) {
-                rp.sprite.setVisible(false);
+                rp.sprite.setVisible(true);
+                rp.sprite.setScale(1.2);
+                rp.sprite.setDepth(12);
                 // Create kart sprite if not yet
                 if (!rp.kartGfx) {
                     rp.kartGfx = this.add.sprite(rp.sprite.x, rp.sprite.y, 'kart_sprite');
                     rp.kartGfx.setDepth(11);
                     rp.kartGfx.setOrigin(0.5, 0.5);
-                    rp.kartGfx.setScale(0.75);
                 }
                 // Smooth interpolation (kart players move)
                 if (dist > 500) {
@@ -850,6 +854,8 @@ export class OfficeScene extends Phaser.Scene {
                     rp.sprite.y = rp.targetY;
                 }
                 rp.kartGfx.setPosition(rp.sprite.x, rp.sprite.y);
+                const dirAngles = { down: 0, left: Math.PI / 2, up: Math.PI, right: -Math.PI / 2 };
+                rp.kartGfx.setRotation(dirAngles[rp.targetDirection] || 0);
             } else {
                 // Not in kart: destroy kart sprite if it existed
                 if (rp.kartGfx) {
@@ -1040,18 +1046,18 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Hide player sprite, kart uses tile-matching sprite
-            this.player.setVisible(false);
-            this.player.setDepth(10);
+            // Show player as driver — small scale, on top of kart
+            this.player.setVisible(true);
+            this.player.setScale(1.2);
+            this.player.setDepth(12); // above kart
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
             }
-            // Use kart_sprite texture (same design as tile) scaled down to match player size
+            // Kart sprite same size as tile
             this.kartSprite = this.add.sprite(px, py, 'kart_sprite');
             this.kartSprite.setDepth(11);
             this.kartSprite.setOrigin(0.5, 0.5);
-            this.kartSprite.setScale(0.75); // 48px — between player (32px) and tile (64px)
             // Clean up old graphics if any
             if (this.kartBack) { this.kartBack.destroy(); this.kartBack = null; }
             this.kartFront = null;
