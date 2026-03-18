@@ -1000,11 +1000,11 @@ export class OfficeScene extends Phaser.Scene {
             }
             this.player.x = px;
             this.player.y = py;
-            // Player rides at normal scale, shifted up so head peeks out
-            this.player.setScale(2, 2);
+            // Shrink player to fit inside kart cockpit, only head visible
+            this.player.setScale(1.3, 1.3);
             this.player.setOffset(6, 36);
             this.player.setDepth(10); // between kart back(9) and kart front(12)
-            this.player.y = py - 10;
+            this.player.y = py - 8;
             // Remove the kart tile from the map
             if (this.wallsLayer) {
                 this.wallsLayer.removeTileAt(seatInfo.tileX, seatInfo.tileY);
@@ -1111,109 +1111,89 @@ export class OfficeScene extends Phaser.Scene {
     _drawKartLayers(back, front, cx, cy, dir) {
         back.clear();
         front.clear();
-        // Kart in two layers: back(depth 9) behind player, front(depth 12) hides legs
-        // Size: 40w x 50h vertical, 50w x 40h horizontal
-        const isVert = dir === 'up' || dir === 'down';
-        const W = isVert ? 40 : 50;
-        const H = isVert ? 50 : 40;
-        const x = cx - W / 2;
-        const y = cy - H / 2;
+        // Kart ~48x48, cockpit small (head-only opening ~18px)
+        // Player at scale 1.3 = ~42px wide, head ~18px wide
+        const S = 48; // kart size (square-ish)
+        const x = cx - S / 2;
+        const y = cy - S / 2;
+        const cockpitOpen = 18; // only head peeks through
+        const wallThick = (S - cockpitOpen) / 2; // ~15px walls
 
-        // === BACK LAYER (behind player) — shadow, wheels, body base ===
+        // === BACK LAYER (depth 9) — behind player ===
         back.fillStyle(0x000000, 0.2);
-        back.fillEllipse(cx, cy + H / 2, W + 6, 10);
-        // Wheels
+        back.fillEllipse(cx, cy + S / 2, S + 8, 10);
+        // Wheels at corners
         back.fillStyle(0x1a1a2e, 1);
         back.fillRect(x - 3, y - 2, 8, 8);
-        back.fillRect(x + W - 5, y - 2, 8, 8);
-        back.fillRect(x - 3, y + H - 6, 8, 8);
-        back.fillRect(x + W - 5, y + H - 6, 8, 8);
-        // Body fill
+        back.fillRect(x + S - 5, y - 2, 8, 8);
+        back.fillRect(x - 3, y + S - 6, 8, 8);
+        back.fillRect(x + S - 5, y + S - 6, 8, 8);
+        // Full body (red)
         back.fillStyle(0xdc2626, 1);
-        back.fillRect(x, y, W, H);
-        // Darker half
+        back.fillRect(x, y, S, S);
+        // Darker bottom half
         back.fillStyle(0xb91c1c, 1);
-        if (isVert) {
-            back.fillRect(x, cy, W, H / 2);
-        } else {
-            back.fillRect(cx, y, W / 2, H);
-        }
-        // Cockpit hole (dark)
+        back.fillRect(x, cy, S, S / 2);
+        // Cockpit seat (dark) — small opening
         back.fillStyle(0x1e293b, 1);
-        if (isVert) {
-            back.fillRect(x + 5, cy - 12, W - 10, 24);
-        } else {
-            back.fillRect(cx - 12, y + 5, 24, H - 10);
-        }
+        back.fillRect(cx - cockpitOpen / 2, cy - cockpitOpen / 2, cockpitOpen, cockpitOpen);
 
-        // === FRONT LAYER (in front of player) — side walls, hood, details ===
-        // Side walls of cockpit (cover player's legs on left/right)
+        // === FRONT LAYER (depth 12) — covers player body, only head visible ===
+        // Full body overlay with cockpit cutout
+        // Draw 4 walls around cockpit opening
         front.fillStyle(0xdc2626, 1);
-        if (isVert) {
-            // Left and right walls
-            front.fillRect(x, cy - 12, 5, 24);
-            front.fillRect(x + W - 5, cy - 12, 5, 24);
-            // Hood (front of kart)
-            if (dir === 'up') {
-                front.fillRect(x, y, W, 12);
-                front.fillStyle(0xb91c1c, 1);
-                front.fillRect(x, y + 8, W, 4);
-            } else {
-                front.fillRect(x, y + H - 12, W, 12);
-                front.fillStyle(0xb91c1c, 1);
-                front.fillRect(x, y + H - 12, W, 4);
-            }
-        } else {
-            // Top and bottom walls
-            front.fillRect(cx - 12, y, 24, 5);
-            front.fillRect(cx - 12, y + H - 5, 24, 5);
-            // Hood
-            if (dir === 'left') {
-                front.fillRect(x, y, 12, H);
-                front.fillStyle(0xb91c1c, 1);
-                front.fillRect(x + 8, y, 4, H);
-            } else {
-                front.fillRect(x + W - 12, y, 12, H);
-                front.fillStyle(0xb91c1c, 1);
-                front.fillRect(x + W - 12, y, 4, H);
-            }
-        }
-        // Racing stripe on front layer
-        front.fillStyle(0xf8fafc, 1);
-        if (isVert) {
-            front.fillRect(cx - 1, y, 3, H);
-        } else {
-            front.fillRect(x, cy - 1, W, 3);
-        }
-        // Headlights
+        // Top wall (from kart top to cockpit top)
+        front.fillRect(x, y, S, wallThick);
+        // Bottom wall
+        front.fillRect(x, cy + cockpitOpen / 2, S, wallThick);
+        // Left wall
+        front.fillRect(x, y + wallThick, wallThick, S - wallThick * 2);
+        // Right wall
+        front.fillRect(x + S - wallThick, y + wallThick, wallThick, S - wallThick * 2);
+
+        // Darker accents on front
+        front.fillStyle(0xb91c1c, 1);
+        front.fillRect(x, cy + cockpitOpen / 2, S, 3);
+        front.fillRect(x + S - 3, y, 3, S);
+
+        // Headlights on front edge
         front.fillStyle(0xfde047, 1);
         if (dir === 'up') {
-            front.fillRect(x + 4, y, 5, 3);
-            front.fillRect(x + W - 9, y, 5, 3);
+            front.fillRect(x + 4, y, 6, 3);
+            front.fillRect(x + S - 10, y, 6, 3);
         } else if (dir === 'down') {
-            front.fillRect(x + 4, y + H - 3, 5, 3);
-            front.fillRect(x + W - 9, y + H - 3, 5, 3);
+            front.fillRect(x + 4, y + S - 3, 6, 3);
+            front.fillRect(x + S - 10, y + S - 3, 6, 3);
         } else if (dir === 'left') {
-            front.fillRect(x, y + 4, 3, 5);
-            front.fillRect(x, y + H - 9, 3, 5);
+            front.fillRect(x, y + 4, 3, 6);
+            front.fillRect(x, y + S - 10, 3, 6);
         } else {
-            front.fillRect(x + W - 3, y + 4, 3, 5);
-            front.fillRect(x + W - 3, y + H - 9, 3, 5);
+            front.fillRect(x + S - 3, y + 4, 3, 6);
+            front.fillRect(x + S - 3, y + S - 10, 3, 6);
         }
-        // Taillights (opposite side)
+        // Taillights on back edge
         front.fillStyle(0xff4444, 1);
         if (dir === 'up') {
-            front.fillRect(x + 4, y + H - 3, 4, 3);
-            front.fillRect(x + W - 8, y + H - 3, 4, 3);
+            front.fillRect(x + 4, y + S - 3, 4, 3);
+            front.fillRect(x + S - 8, y + S - 3, 4, 3);
         } else if (dir === 'down') {
             front.fillRect(x + 4, y, 4, 3);
-            front.fillRect(x + W - 8, y, 4, 3);
+            front.fillRect(x + S - 8, y, 4, 3);
         } else if (dir === 'left') {
-            front.fillRect(x + W - 3, y + 4, 3, 4);
-            front.fillRect(x + W - 3, y + H - 8, 3, 4);
+            front.fillRect(x + S - 3, y + 4, 3, 4);
+            front.fillRect(x + S - 3, y + S - 8, 3, 4);
         } else {
             front.fillRect(x, y + 4, 3, 4);
-            front.fillRect(x, y + H - 8, 3, 4);
+            front.fillRect(x, y + S - 8, 3, 4);
+        }
+        // Racing stripe
+        front.fillStyle(0xf8fafc, 1);
+        if (dir === 'up' || dir === 'down') {
+            front.fillRect(cx - 1, y, 3, wallThick);
+            front.fillRect(cx - 1, cy + cockpitOpen / 2, 3, wallThick);
+        } else {
+            front.fillRect(x, cy - 1, wallThick, 3);
+            front.fillRect(cx + cockpitOpen / 2, cy - 1, wallThick, 3);
         }
     }
 
