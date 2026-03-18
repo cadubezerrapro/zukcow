@@ -6938,22 +6938,34 @@ export class BootScene extends Phaser.Scene {
     }
 
     drawGamingChair(ctx, x, y, T) {
-        ctx.fillStyle = '#1a1c2e'; ctx.fillRect(x, y, T, T);
-        // Base/wheels
-        ctx.fillStyle = '#333'; ctx.fillRect(x+10, y+28, 12, 3);
-        ctx.fillStyle = '#444'; ctx.fillRect(x+14, y+25, 4, 4);
-        // Seat
-        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+8, y+18, 16, 8);
-        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+9, y+19, 14, 6);
-        // Back
-        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+9, y+4, 14, 15);
-        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x+11, y+6, 10, 4);
+        // No background fill — transparent
+        // Star-base wheels (5 wheels)
+        ctx.fillStyle = '#444';
+        ctx.fillRect(x+8, y+28, 3, 2); ctx.fillRect(x+21, y+28, 3, 2);
+        ctx.fillRect(x+6, y+26, 2, 2); ctx.fillRect(x+24, y+26, 2, 2);
+        ctx.fillRect(x+15, y+29, 2, 2);
+        // Center pole
+        ctx.fillStyle = '#555'; ctx.fillRect(x+14, y+24, 4, 5);
+        // Seat cushion
+        ctx.fillStyle = '#1a1a2e'; ctx.fillRect(x+7, y+18, 18, 7);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+8, y+19, 16, 5);
+        // Armrests
+        ctx.fillStyle = '#333'; ctx.fillRect(x+6, y+15, 2, 8); ctx.fillRect(x+24, y+15, 2, 8);
+        ctx.fillStyle = '#444'; ctx.fillRect(x+5, y+14, 4, 2); ctx.fillRect(x+23, y+14, 4, 2);
+        // Backrest
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+9, y+3, 14, 16);
+        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+22, y+4, 1, 14);
         // Racing stripes
-        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+9, y+5, 2, 13);
-        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+21, y+5, 2, 13);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+9, y+4, 2, 14);
+        ctx.fillStyle = '#fbbf24'; ctx.fillRect(x+21, y+4, 2, 14);
+        // Inner back detail
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+12, y+6, 8, 10);
+        ctx.fillStyle = '#334155'; ctx.fillRect(x+13, y+7, 6, 8);
         // Headrest
-        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+11, y+2, 10, 4);
-        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+12, y+3, 8, 2);
+        ctx.fillStyle = '#dc2626'; ctx.fillRect(x+11, y+1, 10, 4);
+        ctx.fillStyle = '#b91c1c'; ctx.fillRect(x+12, y+2, 8, 2);
+        // Headrest pillow
+        ctx.fillStyle = '#1e293b'; ctx.fillRect(x+13, y+2, 6, 2);
     }
 
     drawDeskLamp(ctx, x, y, T) {

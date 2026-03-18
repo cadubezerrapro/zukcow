@@ -11,6 +11,7 @@ const KART_SPEED = 640;
 const KART_GID = 181;
 const POSITION_SEND_INTERVAL = 250;
 const AVATAR_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gray'];
+const ROTATABLE_TILES = new Set([23, 24, 27, 28, 29, 31, 32, 35, 36, 82, 83, 89, 93, 107, 108, 109, 110, 142, 143, 144, 145, 146, 148, 153, 154, 155, 156, 172]);
 
 const ROOM_ZONES = [
     { id: 'conferencia', name: 'Sala de Conferencia', x1: 2, y1: 12, x2: 18, y2: 17 },
@@ -187,7 +188,7 @@ export class OfficeScene extends Phaser.Scene {
 
     resetNonRotatableTiles() {
         // Reset rotation/flip on tiles that shouldn't be rotated
-        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36, 82, 83, 89, 93, 107, 108, 109, 110]);
+        const ROTATABLE = ROTATABLE_TILES;
         this.wallsLayer.forEachTile(tile => {
             if (tile.index >= 23 && !ROTATABLE.has(tile.index)) {
                 tile.rotation = 0;
@@ -198,7 +199,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     applyMapEdits() {
-        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        const ROTATABLE = ROTATABLE_TILES;
         try {
             const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
             edits.forEach(edit => {
@@ -239,7 +240,7 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     applyRemoteEdit(edit) {
-        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        const ROTATABLE = ROTATABLE_TILES;
         try {
             const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
             if (edit.type === 'delete') {
@@ -617,7 +618,7 @@ export class OfficeScene extends Phaser.Scene {
         });
 
         // Rotate: cycle 0° → 90° → 180° → 270° → 0°
-        const ROTATABLE = new Set([23, 24, 27, 28, 29, 31, 35, 36]);
+        const ROTATABLE = ROTATABLE_TILES;
         eventBus.on('furniture:rotate', (info) => {
             const tile = this.wallsLayer.getTileAt(info.tileX, info.tileY);
             if (!tile || !ROTATABLE.has(tile.index)) return;
