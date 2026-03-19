@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Wifi, WifiOff, ChevronRight, ChevronLeft, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen } from 'lucide-react';
+import { Users, Wifi, WifiOff, ChevronRight, ChevronLeft, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen, Bot } from 'lucide-react';
 
 function Tooltip({ text, children }) {
     const [show, setShow] = useState(false);
@@ -23,7 +23,7 @@ export default function HUD({
     micEnabled, camEnabled, onToggleMic, onToggleCam,
     currentRoom, currentRoomName, roomLocked, peersInRoom,
     onScreenShare, isScreenSharing, onLockRoom, onUnlockRoom,
-    nearSeat, isSitting
+    nearSeat, isSitting, onToggleAgents
 }) {
     return (
         <div className="gather-hud">
@@ -70,6 +70,14 @@ export default function HUD({
 
                 {/* Online Count & User List Toggle */}
                 <div className="flex items-center gap-2 pointer-events-auto">
+                    <button
+                        onClick={onToggleAgents}
+                        className="bg-gather-card/90 backdrop-blur-sm border border-purple-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-purple-900/40 transition-colors cursor-pointer"
+                    >
+                        <Bot size={16} className="text-purple-400" />
+                        <span className="text-white text-sm font-medium">Agentes</span>
+                        <span className="bg-purple-500/20 text-purple-300 text-xs font-semibold px-1.5 py-0.5 rounded-md">136</span>
+                    </button>
                     <button
                         onClick={onToggleUserList}
                         className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-gray-700/90 transition-colors cursor-pointer"

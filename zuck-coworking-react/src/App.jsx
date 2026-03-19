@@ -8,6 +8,9 @@ import UserList from './components/UserList';
 import WelcomeModal from './components/WelcomeModal';
 import VideoBubbles from './components/VideoBubbles';
 import FurnitureEditor from './components/FurnitureEditor';
+import AgentPanel from './components/AgentPanel';
+import AgentCatalog from './components/AgentCatalog';
+import AgentChat from './components/AgentChat';
 
 export default function App() {
     const gameContainerRef = useRef(null);
@@ -48,6 +51,11 @@ export default function App() {
 
     // Camera info for VideoBubbles positioning
     const [cameraInfo, setCameraInfo] = useState(null);
+
+    // Agent panel state
+    const [selectedAgent, setSelectedAgent] = useState(null);
+    const [showCatalog, setShowCatalog] = useState(false);
+    const [chatAgents, setChatAgents] = useState([]); // array of agentIds in chat
 
     // Furniture editor state
     const [editorMode, setEditorMode] = useState(false);
@@ -241,6 +249,16 @@ export default function App() {
         const unsubFDeselected = eventBus.on('furniture:deselected', () => setSelectedFurniture(null));
         const unsubFMoveEnd = eventBus.on('furniture:move_end', () => { setIsMovingFurniture(false); setSelectedFurniture(null); });
 
+        // NPC agent click
+        const unsubNpcClick = eventBus.on('npc:clicked', (agentId) => {
+            // If chat is open, add agent to chat; otherwise show info panel
+            setChatAgents(prev => {
+                if (prev.length > 0) return prev.includes(agentId) ? prev : [...prev, agentId];
+                return prev;
+            });
+            setSelectedAgent(agentId);
+        });
+
         return () => {
             leaveSpace().catch(() => {});
             sseService.disconnect();
@@ -262,6 +280,7 @@ export default function App() {
             unsubFSelected();
             unsubFDeselected();
             unsubFMoveEnd();
+            unsubNpcClick();
         };
     }, [showWelcome]);
 
@@ -567,6 +586,7 @@ export default function App() {
                 onUnlockRoom={handleUnlockRoom}
                 nearSeat={nearSeat}
                 isSitting={isSitting}
+                onToggleAgents={() => setShowCatalog(prev => !prev)}
             />
 
             {showUserList && (
@@ -632,6 +652,53 @@ export default function App() {
                     eventBus.emit('furniture:add_new', { tileId: tileId + 1 }); // +1: catalog uses 0-based, map uses GID (firstgid=1)
                 }}
             />
+
+            {selectedAgent && !chatAgents.includes(selectedAgent) && (
+                <AgentPanel
+                    agentId={selectedAgent}
+                    onClose={() => setSelectedAgent(null)}
+                    onCallAgent={(agentId) => {
+                        eventBus.emit('npc:call', agentId);
+                        setSelectedAgent(null);
+                    }}
+                    onOpenChat={(agentId) => {
+                        eventBus.emit('npc:call', agentId);
+                        setChatAgents(prev => prev.includes(agentId) ? prev : [...prev, agentId]);
+                        setSelectedAgent(null);
+                    }}
+                />
+            )}
+
+            {showCatalog && (
+                <AgentCatalog
+                    onClose={() => setShowCatalog(false)}
+                    onCallAgent={(agentId) => {
+                        eventBus.emit('npc:call', agentId);
+                        setShowCatalog(false);
+                    }}
+                    onOpenChat={(agentId) => {
+                        eventBus.emit('npc:call', agentId);
+                        setChatAgents(prev => prev.includes(agentId) ? prev : [...prev, agentId]);
+                        setSelectedAgent(null);
+                        setShowCatalog(false);
+                    }}
+                />
+            )}
+
+            {chatAgents.length > 0 && (
+                <AgentChat
+                    agentIds={chatAgents}
+                    onClose={() => {
+                        chatAgents.forEach(id => eventBus.emit('npc:dismiss', id));
+                        setChatAgents([]);
+                    }}
+                    onAddAgent={() => setShowCatalog(true)}
+                    onRemoveAgent={(agentId) => {
+                        eventBus.emit('npc:dismiss', agentId);
+                        setChatAgents(prev => prev.filter(id => id !== agentId));
+                    }}
+                />
+            )}
         </div>
     );
 }

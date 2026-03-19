@@ -3,6 +3,7 @@ import eventBus from '../../utils/eventBus';
 import mapData from '../maps/default_office.json';
 import { sendFurnitureEdit, getFurnitureEdits } from '../../services/api';
 import sseService from '../../services/sse';
+import { NPCManager } from '../npc/NPCManager';
 
 const TILE_SIZE = 64;
 const PLAYER_SPEED = 320;
@@ -70,6 +71,11 @@ export class OfficeScene extends Phaser.Scene {
         this.setupInput();
         this.setupEventBus();
 
+        // NPC Agent System
+        this.npcManager = new NPCManager(this);
+        this.npcManager.init();
+        this.npcManager.spawnAll();
+
         eventBus.emit('scene:ready', {
             mapWidth: this.map.widthInPixels,
             mapHeight: this.map.heightInPixels
@@ -127,9 +133,16 @@ export class OfficeScene extends Phaser.Scene {
         if (this._frontColliders) {
             this._frontColliders.clear(true, true);
         }
+        // Build a set of door and passage positions to exclude from collision
+        const doorZone = new Set();
+        Object.values(ROOM_DOORS).flat().forEach(d => {
+            doorZone.add(d.x + ',' + d.y);
+            doorZone.add(d.x + ',' + (d.y - 1));
+            doorZone.add(d.x + ',' + (d.y + 1));
+        });
         if (this.frontLayer) {
             this.frontLayer.forEachTile(tile => {
-                if (tile.index > 0) {
+                if (tile.index > 0 && !doorZone.has(tile.x + ',' + tile.y)) {
                     const worldX = tile.pixelX + tile.width / 2;
                     const worldY = tile.pixelY + tile.height / 2;
                     const body = this.add.zone(worldX, worldY, tile.width, tile.height);
@@ -233,6 +246,14 @@ export class OfficeScene extends Phaser.Scene {
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) tile.flipX = edit.flipX;
                 } else if (edit.type === 'place') {
+                    // Prevent placing furniture on or adjacent to door tiles
+                    const doorPositions = Object.values(ROOM_DOORS).flat();
+                    const isNearDoor = doorPositions.some(d =>
+                        (d.x === edit.x && d.y === edit.y) ||
+                        (d.x === edit.x && d.y === edit.y - 1) ||
+                        (d.x === edit.x && d.y === edit.y + 1)
+                    );
+                    if (isNearDoor) return;
                     targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) {
@@ -249,6 +270,16 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     saveMapEdit(edit) {
+        // Prevent placing furniture on door tiles or adjacent passage tiles
+        if (edit.type === 'place') {
+            const doorPositions = Object.values(ROOM_DOORS).flat();
+            const isNearDoor = doorPositions.some(d =>
+                (d.x === edit.x && d.y === edit.y) ||
+                (d.x === edit.x && d.y === edit.y - 1) ||
+                (d.x === edit.x && d.y === edit.y + 1)
+            );
+            if (isNearDoor) return;
+        }
         try {
             const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
             edits.push(edit);
@@ -262,6 +293,16 @@ export class OfficeScene extends Phaser.Scene {
 
     applyRemoteEdit(edit) {
         const ROTATABLE = ROTATABLE_TILES;
+        // Prevent placing furniture on or adjacent to door tiles
+        if (edit.type === 'place') {
+            const doorPositions = Object.values(ROOM_DOORS).flat();
+            const isNearDoor = doorPositions.some(d =>
+                (d.x === edit.x && d.y === edit.y) ||
+                (d.x === edit.x && d.y === edit.y - 1) ||
+                (d.x === edit.x && d.y === edit.y + 1)
+            );
+            if (isNearDoor) return;
+        }
         try {
             const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
             if (edit.type === 'delete') {
@@ -463,6 +504,18 @@ export class OfficeScene extends Phaser.Scene {
                 eventBus.emit('furniture:move_end');
             }
             eventBus.emit('furniture:deselected');
+        });
+
+        // NPC click interaction
+        this.input.on('pointerdown', (pointer) => {
+            if (this.editorMode) return;
+            const worldPt = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+            if (this.npcManager) {
+                const npc = this.npcManager.getNPCAt(worldPt.x, worldPt.y);
+                if (npc) {
+                    eventBus.emit('npc:clicked', npc.agentId);
+                }
+            }
         });
 
         // Helper: remove a furniture tile from the correct layer
@@ -675,6 +728,8 @@ export class OfficeScene extends Phaser.Scene {
         this.checkSeatProximity();
         this.sendPosition(time);
         this.updateRemotePlayerInterpolation(time);
+        if (this.npcManager) this.npcManager.update(time, time - (this._lastTime || time));
+        this._lastTime = time;
         this.updateAnimatedTiles(time);
 
         eventBus.emit('player:position', {
