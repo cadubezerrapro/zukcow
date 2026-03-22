@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Move, Trash2, Pencil, X, Copy, RotateCw, Plus, Package } from 'lucide-react';
+import { Move, Trash2, Pencil, X, Copy, RotateCw, Plus, Package, Download } from 'lucide-react';
 
 const TILE_NAMES = {
     // Floors
@@ -443,6 +443,29 @@ export default function FurnitureEditor({
                         {showCatalog ? 'Fechar Catalogo' : 'Adicionar Moveis'}
                     </span>
                     {showCatalog && <X size={14} />}
+                </button>
+
+                {/* Export edits button */}
+                <button
+                    onClick={() => {
+                        const edits = localStorage.getItem('coworking_map_edits') || '[]';
+                        const parsed = JSON.parse(edits);
+                        if (parsed.length === 0) {
+                            alert('Nenhuma edicao para exportar.');
+                            return;
+                        }
+                        const blob = new Blob([edits], { type: 'application/json' });
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'map_edits.json';
+                        a.click();
+                        URL.revokeObjectURL(url);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2 rounded-xl border backdrop-blur-sm transition-all cursor-pointer bg-gather-card/90 border-gather-border text-gray-400 hover:text-white hover:border-gray-500"
+                >
+                    <Download size={16} />
+                    <span className="text-sm font-medium">Exportar Edits</span>
                 </button>
             </div>
 

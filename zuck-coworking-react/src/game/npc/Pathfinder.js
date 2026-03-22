@@ -8,8 +8,8 @@ const TILE_SIZE = 64;
 export class Pathfinder {
   constructor(scene) {
     this.scene = scene;
-    this.width = 80;  // map width in tiles
-    this.height = 56; // map height in tiles
+    this.width = 155;  // map width in tiles
+    this.height = 56;  // map height in tiles
     this.grid = null;
   }
 

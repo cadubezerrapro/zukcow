@@ -114,6 +114,18 @@ async function handleJoin(res, userId, userName, req) {
 
     const users = await getOnlineUsers(spaceId);
 
+    // Auto-unlock rooms with < 2 occupants (clears stale locks from previous sessions)
+    const lockData = await redis.hgetall(`cowork:space:${spaceId}:locks`) || {};
+    for (const [roomId] of Object.entries(lockData)) {
+        let count = 0;
+        for (const u of Object.values(users)) {
+            if (u.current_room === roomId) count++;
+        }
+        if (count < 2) {
+            await redis.hdel(`cowork:space:${spaceId}:locks`, roomId);
+        }
+    }
+
     return res.json({
         success: true,
         message: 'Conectado ao escritorio',

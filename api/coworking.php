@@ -89,6 +89,22 @@ function handleJoin($pdo, $userId, $userName) {
     // Get all online users
     $users = getOnlineUsers($pdo, $spaceId);
 
+    // Auto-unlock rooms with < 2 occupants (clears stale locks from previous sessions)
+    $lockStmt = $pdo->prepare("SELECT room_id FROM coworking_room_locks WHERE space_id = :sid");
+    $lockStmt->execute([':sid' => $spaceId]);
+    $lockedRooms = $lockStmt->fetchAll(PDO::FETCH_COLUMN);
+
+    foreach ($lockedRooms as $rid) {
+        $count = 0;
+        foreach ($users as $u) {
+            if (isset($u['current_room']) && $u['current_room'] === $rid) $count++;
+        }
+        if ($count < 2) {
+            $pdo->prepare("DELETE FROM coworking_room_locks WHERE space_id = :sid AND room_id = :rid")
+                ->execute([':sid' => $spaceId, ':rid' => $rid]);
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'message' => 'Conectado ao escritorio',

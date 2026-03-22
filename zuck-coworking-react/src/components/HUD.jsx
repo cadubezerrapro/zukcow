@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Users, Wifi, WifiOff, ChevronRight, ChevronLeft, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen, Bot } from 'lucide-react';
+import { Wifi, WifiOff, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen, Bot } from 'lucide-react';
 
 function Tooltip({ text, children }) {
     const [show, setShow] = useState(false);
@@ -19,29 +19,21 @@ function Tooltip({ text, children }) {
 }
 
 export default function HUD({
-    connected, onlineCount, showUserList, onToggleUserList,
-    micEnabled, camEnabled, onToggleMic, onToggleCam,
+    connected, micEnabled, camEnabled, onToggleMic, onToggleCam,
     currentRoom, currentRoomName, roomLocked, peersInRoom,
     onScreenShare, isScreenSharing, onLockRoom, onUnlockRoom,
-    nearSeat, isSitting, onToggleAgents
+    nearSeat, isSitting, onToggleAgents, sidebarOpen
 }) {
     return (
         <div className="gather-hud">
             {/* Top Bar */}
-            <div className="absolute top-4 left-4 right-4 flex items-center justify-between pointer-events-none">
+            <div
+                className="absolute top-4 right-4 flex items-center justify-between pointer-events-none transition-all duration-300"
+                style={{ left: sidebarOpen ? 296 : 40 }}
+            >
                 {/* Logo & Connection Status */}
                 <div className="flex items-center gap-3 pointer-events-auto">
-                    <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-3">
-                        <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                                <span className="text-white font-bold text-sm">Z</span>
-                            </div>
-                            <div>
-                                <h1 className="text-white text-sm font-semibold leading-tight">ZuckPay Co-Work</h1>
-                                <p className="text-gray-400 text-[10px]">Escritorio Virtual</p>
-                            </div>
-                        </div>
-                        <div className="w-px h-6 bg-gather-border mx-1" />
+                    <div className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-2">
                         {connected ? (
                             <div className="flex items-center gap-1.5 text-emerald-400">
                                 <Wifi size={14} />
@@ -68,7 +60,7 @@ export default function HUD({
                     )}
                 </div>
 
-                {/* Online Count & User List Toggle */}
+                {/* Agents Button */}
                 <div className="flex items-center gap-2 pointer-events-auto">
                     <button
                         onClick={onToggleAgents}
@@ -77,15 +69,6 @@ export default function HUD({
                         <Bot size={16} className="text-purple-400" />
                         <span className="text-white text-sm font-medium">Agentes</span>
                         <span className="bg-purple-500/20 text-purple-300 text-xs font-semibold px-1.5 py-0.5 rounded-md">136</span>
-                    </button>
-                    <button
-                        onClick={onToggleUserList}
-                        className="bg-gather-card/90 backdrop-blur-sm border border-gather-border rounded-xl px-4 py-2 flex items-center gap-2 hover:bg-gray-700/90 transition-colors cursor-pointer"
-                    >
-                        <Users size={16} className="text-gather-blue" />
-                        <span className="text-white text-sm font-medium">{onlineCount}</span>
-                        <span className="text-gray-400 text-xs">online</span>
-                        {showUserList ? <ChevronRight size={14} className="text-gray-400" /> : <ChevronLeft size={14} className="text-gray-400" />}
                     </button>
                 </div>
             </div>
@@ -137,7 +120,7 @@ export default function HUD({
                     {(isScreenSharing || (currentRoom && peersInRoom > 0)) && (
                         <>
                             <div className="w-px h-6 bg-gather-border" />
-                            <Tooltip text={isScreenSharing ? 'Parar compartilhamento' : 'Compartilhar tela'}>
+                            <Tooltip text={isScreenSharing ? 'Parar compartilhamento (ou use a barra do navegador)' : 'Compartilhar tela'}>
                                 <button
                                     onClick={onScreenShare}
                                     className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer ${

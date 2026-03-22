@@ -313,6 +313,12 @@ export class BootScene extends Phaser.Scene {
             // Vehicles
             case 180: this.drawKart(ctx, x, y, T); break;
 
+            // Stairs
+            case 181: this.drawStairsDown(ctx, x, y, T); break;
+            case 182: this.drawStairsPlatform(ctx, x, y, T); break;
+            case 183: this.drawStairsRight(ctx, x, y, T); break;
+            case 184: this.drawStairsPlatformH(ctx, x, y, T); break;
+
             default:
                 ctx.fillStyle = '#1a1c2e';
                 ctx.fillRect(x, y, T, T);
@@ -7661,5 +7667,106 @@ export class BootScene extends Phaser.Scene {
         ctx.fillStyle = '#fde047';
         ctx.fillRect(x + 8, y + 10, 2, 1);
         ctx.fillRect(x + 22, y + 10, 2, 1);
+    }
+
+    drawStairsDown(ctx, x, y, T) {
+        // Top-down view of stairs going down - brown wooden steps
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(x, y, T, T);
+        // Draw horizontal step lines
+        const steps = 6;
+        const stepH = T / steps;
+        for (let i = 0; i < steps; i++) {
+            const sy = y + i * stepH;
+            // Alternating step colors for 3D effect
+            ctx.fillStyle = i % 2 === 0 ? '#9B8465' : '#7B6345';
+            ctx.fillRect(x, sy, T, stepH - 1);
+            // Step edge highlight
+            ctx.fillStyle = '#A89475';
+            ctx.fillRect(x, sy, T, 1);
+            // Step shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(x, sy + stepH - 2, T, 2);
+        }
+        // Side rails
+        ctx.fillStyle = '#6B5335';
+        ctx.fillRect(x, y, 2, T);
+        ctx.fillRect(x + T - 2, y, 2, T);
+        // Arrow indicator pointing down
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        const cx = x + T/2;
+        const cy = y + T/2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 4, cy - 3);
+        ctx.lineTo(cx + 4, cy - 3);
+        ctx.lineTo(cx, cy + 4);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    drawStairsPlatform(ctx, x, y, T) {
+        // Landing platform at top/bottom of stairs
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(x, y, T, T);
+        // Wooden plank pattern
+        for (let i = 0; i < 4; i++) {
+            const pw = T / 4;
+            ctx.fillStyle = i % 2 === 0 ? '#9B8465' : '#8B7355';
+            ctx.fillRect(x + i * pw, y, pw, T);
+            // Plank edge
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(x + i * pw, y, 1, T);
+        }
+        // Border
+        ctx.strokeStyle = '#6B5335';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
+    }
+
+    drawStairsRight(ctx, x, y, T) {
+        // Top-down view of stairs going right - vertical step lines
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(x, y, T, T);
+        const steps = 6;
+        const stepW = T / steps;
+        for (let i = 0; i < steps; i++) {
+            const sx = x + i * stepW;
+            ctx.fillStyle = i % 2 === 0 ? '#9B8465' : '#7B6345';
+            ctx.fillRect(sx, y, stepW - 1, T);
+            ctx.fillStyle = '#A89475';
+            ctx.fillRect(sx, y, 1, T);
+            ctx.fillStyle = 'rgba(0,0,0,0.2)';
+            ctx.fillRect(sx + stepW - 2, y, 2, T);
+        }
+        // Top/bottom rails
+        ctx.fillStyle = '#6B5335';
+        ctx.fillRect(x, y, T, 2);
+        ctx.fillRect(x, y + T - 2, T, 2);
+        // Arrow pointing right
+        ctx.fillStyle = 'rgba(255,255,255,0.4)';
+        const cx = x + T / 2;
+        const cy = y + T / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 4);
+        ctx.lineTo(cx - 3, cy + 4);
+        ctx.lineTo(cx + 4, cy);
+        ctx.closePath();
+        ctx.fill();
+    }
+
+    drawStairsPlatformH(ctx, x, y, T) {
+        // Horizontal landing platform for lateral stairs
+        ctx.fillStyle = '#8B7355';
+        ctx.fillRect(x, y, T, T);
+        for (let i = 0; i < 4; i++) {
+            const ph = T / 4;
+            ctx.fillStyle = i % 2 === 0 ? '#9B8465' : '#8B7355';
+            ctx.fillRect(x, y + i * ph, T, ph);
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fillRect(x, y + i * ph, T, 1);
+        }
+        ctx.strokeStyle = '#6B5335';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, y + 0.5, T - 1, T - 1);
     }
 }

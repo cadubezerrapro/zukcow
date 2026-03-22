@@ -4,13 +4,14 @@ import eventBus from './utils/eventBus';
 import sseService from './services/sse';
 import { joinSpace, leaveSpace, heartbeat, setDisplayName, sendSignal, lockRoom, unlockRoom, getLocalUserId } from './services/api';
 import HUD from './components/HUD';
-import UserList from './components/UserList';
 import WelcomeModal from './components/WelcomeModal';
 import VideoBubbles from './components/VideoBubbles';
 import FurnitureEditor from './components/FurnitureEditor';
 import AgentPanel from './components/AgentPanel';
 import AgentCatalog from './components/AgentCatalog';
 import AgentChat from './components/AgentChat';
+import PeopleSidebar from './components/PeopleSidebar';
+import MapControls from './components/MapControls';
 
 export default function App() {
     const gameContainerRef = useRef(null);
@@ -18,7 +19,6 @@ export default function App() {
     const heartbeatIntervalRef = useRef(null);
     const [connected, setConnected] = useState(false);
     const [onlineUsers, setOnlineUsers] = useState({});
-    const [showUserList, setShowUserList] = useState(true);
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [showWelcome, setShowWelcome] = useState(true);
     const [displayName, setDisplayNameState] = useState(
@@ -57,6 +57,9 @@ export default function App() {
     const [showCatalog, setShowCatalog] = useState(false);
     const [chatAgents, setChatAgents] = useState([]); // array of agentIds in chat
 
+    // People sidebar state
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+
     // Furniture editor state
     const [editorMode, setEditorMode] = useState(false);
     const [hoveredFurniture, setHoveredFurniture] = useState(null);
@@ -69,7 +72,17 @@ export default function App() {
             const senders = pc.getSenders();
             const existingSender = senders.find(s => s.track?.kind === track.kind);
             if (existingSender) {
-                existingSender.replaceTrack(track);
+                existingSender.replaceTrack(track).then(() => {
+                    // Set high bitrate for video quality
+                    if (track.kind === 'video') {
+                        try {
+                            const params = existingSender.getParameters();
+                            if (!params.encodings) params.encodings = [{}];
+                            params.encodings[0].maxBitrate = 2_000_000; // 2 Mbps for camera
+                            existingSender.setParameters(params).catch(() => {});
+                        } catch (e) { /* ignore */ }
+                    }
+                });
             } else {
                 pc.addTrack(track, stream);
             }
@@ -123,13 +136,13 @@ export default function App() {
         } else {
             try {
                 if (!localStreamRef.current) {
-                    const stream = await navigator.mediaDevices.getUserMedia({ audio: micEnabled, video: true });
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: micEnabled, video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user', frameRate: { ideal: 30 } } });
                     localStreamRef.current = stream;
                     if (micEnabled) setMicEnabled(true);
                     // Add all tracks to existing peers
                     stream.getTracks().forEach(t => addTrackToPeers(t, stream));
                 } else {
-                    const videoStream = await navigator.mediaDevices.getUserMedia({ video: true });
+                    const videoStream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user', frameRate: { ideal: 30 } } });
                     videoStream.getVideoTracks().forEach(t => {
                         localStreamRef.current.addTrack(t);
                         addTrackToPeers(t, localStreamRef.current);
@@ -139,6 +152,15 @@ export default function App() {
                 setCamEnabled(true);
             } catch (err) {
                 console.error('Camera access denied:', err);
+                if (err.name === 'NotAllowedError') {
+                    alert('Permissão de câmera negada. Verifique as configurações do navegador.');
+                } else if (err.name === 'NotFoundError') {
+                    alert('Nenhuma câmera encontrada no dispositivo.');
+                } else if (err.name === 'NotReadableError') {
+                    alert('Câmera em uso por outro aplicativo.');
+                } else {
+                    alert('Erro ao acessar câmera. Verifique se está usando HTTPS.');
+                }
             }
         }
     }, [camEnabled, micEnabled, addTrackToPeers]);
@@ -519,16 +541,28 @@ export default function App() {
             return;
         }
         try {
-            const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+            const stream = await navigator.mediaDevices.getDisplayMedia({ video: { cursor: 'always', width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: 30 } }, audio: false });
             const screenTrack = stream.getVideoTracks()[0];
-            setScreenStream(stream);
+            // Hint WebRTC encoder: screen content (text/detail) — prioritize sharpness
+            screenTrack.contentHint = 'detail';
+            // Clone stream for local preview (original goes to peers)
+            const localPreview = new MediaStream([screenTrack]);
+            setScreenStream(localPreview);
             screenStreamRef.current = stream;
 
-            // Replace video track in all peer connections (or add if no video sender)
+            // Replace video track in all peer connections with high quality encoding
             Object.values(peersRef.current).forEach(pc => {
                 const sender = pc.getSenders().find(s => s.track?.kind === 'video');
                 if (sender) {
-                    sender.replaceTrack(screenTrack);
+                    sender.replaceTrack(screenTrack).then(() => {
+                        // Set high bitrate for screen share quality
+                        try {
+                            const params = sender.getParameters();
+                            if (!params.encodings) params.encodings = [{}];
+                            params.encodings[0].maxBitrate = 4_000_000; // 4 Mbps — full quality
+                            sender.setParameters(params).catch(() => {});
+                        } catch (e) { /* ignore */ }
+                    });
                 } else {
                     pc.addTrack(screenTrack, stream);
                 }
@@ -557,7 +591,7 @@ export default function App() {
         return <WelcomeModal onEnter={handleWelcomeEnter} />;
     }
 
-    const onlineCount = Math.max(1, Object.keys(onlineUsers).length);
+    const localUserId = String(window.USER_ID || getLocalUserId());
 
     return (
         <div className="w-full h-full relative bg-[#1a1c2e]">
@@ -569,9 +603,7 @@ export default function App() {
 
             <HUD
                 connected={connected}
-                onlineCount={onlineCount}
-                showUserList={showUserList}
-                onToggleUserList={() => setShowUserList(prev => !prev)}
+                sidebarOpen={sidebarOpen}
                 micEnabled={micEnabled}
                 camEnabled={camEnabled}
                 onToggleMic={toggleMic}
@@ -589,16 +621,6 @@ export default function App() {
                 onToggleAgents={() => setShowCatalog(prev => !prev)}
             />
 
-            {showUserList && (
-                <UserList
-                    users={onlineUsers}
-                    currentUserId={window.USER_ID || getLocalUserId()}
-                    currentDisplayName={displayName}
-                    onNameChange={handleNameChange}
-                    onClose={() => setShowUserList(false)}
-                />
-            )}
-
             <VideoBubbles
                 remoteStreams={remoteStreams}
                 onlineUsers={onlineUsers}
@@ -610,6 +632,7 @@ export default function App() {
                 currentRoom={currentRoom}
                 displayName={displayName}
                 screenStream={screenStream}
+                onStopScreenShare={stopScreenShare}
             />
 
             <FurnitureEditor
@@ -652,6 +675,18 @@ export default function App() {
                     eventBus.emit('furniture:add_new', { tileId: tileId + 1 }); // +1: catalog uses 0-based, map uses GID (firstgid=1)
                 }}
             />
+
+            <PeopleSidebar
+                onlineUsers={onlineUsers}
+                currentRoom={currentRoom}
+                displayName={displayName}
+                localUserId={localUserId}
+                localUserRoom={currentRoom}
+                open={sidebarOpen}
+                onToggle={() => setSidebarOpen(prev => !prev)}
+            />
+
+            <MapControls onlineUsers={onlineUsers} roomLocks={roomLocks} />
 
             {selectedAgent && !chatAgents.includes(selectedAgent) && (
                 <AgentPanel

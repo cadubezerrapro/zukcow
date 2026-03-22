@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import eventBus from '../../utils/eventBus';
 import mapData from '../maps/default_office.json';
+import rotationOverrides from '../maps/rotation_overrides.json';
 import { sendFurnitureEdit, getFurnitureEdits } from '../../services/api';
 import sseService from '../../services/sse';
 import { NPCManager } from '../npc/NPCManager';
@@ -26,6 +27,15 @@ const ROOM_ZONES = [
     { id: 'lounge', name: 'Lounge / Cafeteria', x1: 2, y1: 27, x2: 30, y2: 34 },
     { id: 'descanso', name: 'Area de Descanso', x1: 32, y1: 27, x2: 50, y2: 34 },
     { id: 'gameroom', name: 'Game Room', x1: 52, y1: 27, x2: 68, y2: 34 },
+    // 2nd floor rooms (right side of map)
+    { id: 'executiva', name: 'Sala Executiva', x1: 85, y1: 12, x2: 108, y2: 17 },
+    { id: 'treinamento', name: 'Sala de Treinamento', x1: 110, y1: 12, x2: 133, y2: 17 },
+    { id: 'auditorio', name: 'Auditorio', x1: 135, y1: 12, x2: 151, y2: 17 },
+    { id: 'lab', name: 'Laboratorio', x1: 85, y1: 19, x2: 108, y2: 24 },
+    { id: 'estudio', name: 'Estudio', x1: 110, y1: 19, x2: 133, y2: 24 },
+    { id: 'biblioteca', name: 'Biblioteca', x1: 135, y1: 19, x2: 151, y2: 24 },
+    { id: 'terraco', name: 'Terraco', x1: 85, y1: 26, x2: 113, y2: 31 },
+    { id: 'rooftop', name: 'Rooftop Bar', x1: 115, y1: 26, x2: 151, y2: 31 },
 ];
 
 const ROOM_DOORS = {
@@ -40,7 +50,29 @@ const ROOM_DOORS = {
     lounge: [{ x: 9, y: 27 }, { x: 10, y: 27 }, { x: 24, y: 27 }, { x: 25, y: 27 }],
     descanso: [{ x: 40, y: 27 }, { x: 41, y: 27 }],
     gameroom: [{ x: 59, y: 27 }, { x: 60, y: 27 }],
+    // Corridor connectors (single-tile passages between sections)
+    _corridor_17: [{ x: 19, y: 17 }, { x: 41, y: 17 }, { x: 59, y: 17 }],
+    _corridor_19: [{ x: 26, y: 19 }, { x: 51, y: 19 }, { x: 60, y: 19 }],
+    _corridor_25: [{ x: 26, y: 25 }, { x: 51, y: 25 }, { x: 60, y: 25 }],
+    // 2nd floor rooms (right side)
+    executiva: [{ x: 95, y: 12 }, { x: 96, y: 12 }],
+    treinamento: [{ x: 120, y: 12 }, { x: 121, y: 12 }],
+    auditorio: [{ x: 142, y: 12 }, { x: 143, y: 12 }],
+    lab: [{ x: 95, y: 19 }, { x: 96, y: 19 }],
+    estudio: [{ x: 120, y: 19 }, { x: 121, y: 19 }],
+    biblioteca: [{ x: 142, y: 19 }, { x: 143, y: 19 }],
+    terraco: [{ x: 98, y: 26 }, { x: 99, y: 26 }],
+    rooftop: [{ x: 132, y: 26 }, { x: 133, y: 26 }],
+    _corridor_27: [{ x: 19, y: 27 }, { x: 31, y: 27 }, { x: 51, y: 27 }],
 };
+
+// Stair zones: stepping on these teleports between floors
+const STAIR_ZONES = [
+    // 1st floor stairs (right side room) -> teleports to 2nd floor corridor center
+    { x1: 71, y1: 22, x2: 76, y2: 24, targetX: 95, targetY: 15, label: '2o Andar' },
+    // 2nd floor stair landing (left side) -> teleports to 1st floor central corridor
+    { x1: 81, y1: 8, x2: 84, y2: 10, targetX: 40, targetY: 18, label: '1o Andar' },
+];
 
 export class OfficeScene extends Phaser.Scene {
     constructor() {
@@ -55,6 +87,7 @@ export class OfficeScene extends Phaser.Scene {
         this.currentSeat = null;
         this.lockedRooms = {};
         this._doorBlockers = {}; // roomId -> array of physics bodies blocking doors
+        this._stairCooldown = 0;
         // Furniture editor
         this.editorMode = false;
         this.movingFurniture = null;
@@ -93,13 +126,22 @@ export class OfficeScene extends Phaser.Scene {
         this.wallsLayer.setCollisionByExclusion([0, -1]);
 
         // Non-collidable tiles: door(4), ceiling_light(34), rug(39), carpets, lily_pad(63), paintings, clock, etc
-        const NON_COLLIDE = [4, 34, 39, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40];
+        const NON_COLLIDE = [3, 4, 34, 39, 52, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40, 182, 183, 184, 185];
         NON_COLLIDE.forEach(gid => this.wallsLayer.setCollision(gid, false));
 
         // 3rd layer: furniture_front — renders ABOVE the player for depth effect
         this.frontLayer = this.map.createLayer('furniture_front', tileset, 0, 0);
         if (this.frontLayer) {
             this.frontLayer.setDepth(20);
+            // Move desk 2x2 bottom tiles to wallsLayer so player renders in front (like other furniture)
+            const DESK_BOTTOM = [123, 124, 109];
+            this.frontLayer.forEachTile(tile => {
+                if (DESK_BOTTOM.includes(tile.index)) {
+                    const placed = this.wallsLayer.putTileAt(tile.index, tile.x, tile.y);
+                    if (placed) placed.setCollision(true);
+                    this.frontLayer.removeTileAt(tile.x, tile.y);
+                }
+            });
         }
 
         // Placeholder — colliders will be built AFTER all edits are applied
@@ -116,6 +158,21 @@ export class OfficeScene extends Phaser.Scene {
         this._furnitureVersion = 0;
         this._furnitureTotal = 0;
         this.loadServerFurniture();
+
+        // Camera controls from React UI
+        eventBus.on('camera:zoom_in', () => {
+            const cam = this.cameras.main;
+            cam.zoom = Math.min(cam.zoom + 0.25, 4);
+        });
+        eventBus.on('camera:zoom_out', () => {
+            const cam = this.cameras.main;
+            cam.zoom = Math.max(cam.zoom - 0.25, 0.5);
+        });
+        eventBus.on('camera:center_on_player', () => {
+            if (this.player) {
+                this.cameras.main.centerOn(this.player.x, this.player.y);
+            }
+        });
 
         // Listen for furniture version changes from polling
         eventBus.on('furniture:version_changed', (version) => {
@@ -142,7 +199,8 @@ export class OfficeScene extends Phaser.Scene {
         });
         if (this.frontLayer) {
             this.frontLayer.forEachTile(tile => {
-                if (tile.index > 0 && !doorZone.has(tile.x + ',' + tile.y)) {
+                const NON_COLLIDE = [3, 4, 34, 39, 52, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40, 182, 183, 184, 185];
+                if (tile.index > 0 && !doorZone.has(tile.x + ',' + tile.y) && !NON_COLLIDE.includes(tile.index)) {
                     const worldX = tile.pixelX + tile.width / 2;
                     const worldY = tile.pixelY + tile.height / 2;
                     const body = this.add.zone(worldX, worldY, tile.width, tile.height);
@@ -202,17 +260,21 @@ export class OfficeScene extends Phaser.Scene {
             { dx: 1, dy: 0, angle: Math.PI * 0.5 }       // desk right → face right (90°)
         ];
 
-        this.wallsLayer.forEachTile(tile => {
-            if (!CHAIR_TILES.includes(tile.index)) return;
-            for (const d of dirs) {
-                const adj = this.wallsLayer.getTileAt(tile.x + d.dx, tile.y + d.dy)
-                         || (this.frontLayer && this.frontLayer.getTileAt(tile.x + d.dx, tile.y + d.dy));
-                if (adj && DESK_TILES.includes(adj.index)) {
-                    tile.rotation = d.angle;
-                    break;
+        const rotateChairOnLayer = (layer) => {
+            layer.forEachTile(tile => {
+                if (!CHAIR_TILES.includes(tile.index)) return;
+                for (const d of dirs) {
+                    const adj = this.wallsLayer.getTileAt(tile.x + d.dx, tile.y + d.dy)
+                             || (this.frontLayer && this.frontLayer.getTileAt(tile.x + d.dx, tile.y + d.dy));
+                    if (adj && DESK_TILES.includes(adj.index)) {
+                        tile.rotation = d.angle;
+                        break;
+                    }
                 }
-            }
-        });
+            });
+        };
+        rotateChairOnLayer(this.wallsLayer);
+        if (this.frontLayer) rotateChairOnLayer(this.frontLayer);
     }
 
     resetNonRotatableTiles() {
@@ -229,6 +291,20 @@ export class OfficeScene extends Phaser.Scene {
 
     applyMapEdits() {
         const ROTATABLE = ROTATABLE_TILES;
+        // Apply baked rotation/flip overrides from file
+        try {
+            (rotationOverrides || []).forEach(edit => {
+                const targetLayer = (edit.layer === 'front' && this.frontLayer) ? this.frontLayer : this.wallsLayer;
+                if (edit.type === 'rotate') {
+                    const tile = targetLayer.getTileAt(edit.x, edit.y);
+                    if (tile && ROTATABLE.has(tile.index)) tile.rotation = edit.rotation;
+                } else if (edit.type === 'flip') {
+                    const tile = targetLayer.getTileAt(edit.x, edit.y);
+                    if (tile) tile.flipX = edit.flipX;
+                }
+            });
+        } catch (e) { /* ignore */ }
+        // Apply localStorage edits (new edits not yet baked)
         try {
             const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
             edits.forEach(edit => {
@@ -246,21 +322,24 @@ export class OfficeScene extends Phaser.Scene {
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) tile.flipX = edit.flipX;
                 } else if (edit.type === 'place') {
-                    // Prevent placing furniture on or adjacent to door tiles
-                    const doorPositions = Object.values(ROOM_DOORS).flat();
-                    const isNearDoor = doorPositions.some(d =>
-                        (d.x === edit.x && d.y === edit.y) ||
-                        (d.x === edit.x && d.y === edit.y - 1) ||
-                        (d.x === edit.x && d.y === edit.y + 1)
-                    );
-                    if (isNearDoor) return;
+                    // Prevent placing non-door furniture on or adjacent to door tiles
+                    if (![3, 4].includes(edit.tileId)) {
+                        const doorPositions = Object.values(ROOM_DOORS).flat();
+                        const isNearDoor = doorPositions.some(d =>
+                            (d.x === edit.x && d.y === edit.y) ||
+                            (d.x === edit.x && d.y === edit.y - 1) ||
+                            (d.x === edit.x && d.y === edit.y + 1)
+                        );
+                        if (isNearDoor) return;
+                    }
                     targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) {
                         if (edit.rotation) tile.rotation = edit.rotation;
                         // Placed furniture needs collision enabled
-                        const NON_COLLIDE_IDS = [4, 34, 39, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40];
+                        const NON_COLLIDE_IDS = [3, 4, 34, 39, 52, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40, 182, 183, 184, 185];
                         if (!NON_COLLIDE_IDS.includes(edit.tileId)) tile.setCollision(true);
+                        else tile.setCollision(false);
                     }
                 }
             });
@@ -270,8 +349,8 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     saveMapEdit(edit) {
-        // Prevent placing furniture on door tiles or adjacent passage tiles
-        if (edit.type === 'place') {
+        // Prevent placing non-door furniture on door tiles or adjacent passage tiles
+        if (edit.type === 'place' && ![3, 4].includes(edit.tileId)) {
             const doorPositions = Object.values(ROOM_DOORS).flat();
             const isNearDoor = doorPositions.some(d =>
                 (d.x === edit.x && d.y === edit.y) ||
@@ -285,16 +364,18 @@ export class OfficeScene extends Phaser.Scene {
             edits.push(edit);
             localStorage.setItem('coworking_map_edits', JSON.stringify(edits));
         } catch (e) {
-            // Ignore storage errors
+            console.warn('localStorage save failed:', e);
         }
         // Sync to server for other players
-        sendFurnitureEdit(edit).catch(() => {});
+        sendFurnitureEdit(edit).catch((err) => {
+            console.warn('Furniture server save failed:', err);
+        });
     }
 
     applyRemoteEdit(edit) {
         const ROTATABLE = ROTATABLE_TILES;
-        // Prevent placing furniture on or adjacent to door tiles
-        if (edit.type === 'place') {
+        // Prevent placing non-door furniture on or adjacent to door tiles
+        if (edit.type === 'place' && ![3, 4].includes(edit.tileId)) {
             const doorPositions = Object.values(ROOM_DOORS).flat();
             const isNearDoor = doorPositions.some(d =>
                 (d.x === edit.x && d.y === edit.y) ||
@@ -316,7 +397,9 @@ export class OfficeScene extends Phaser.Scene {
                 const tile = targetLayer.getTileAt(edit.x, edit.y);
                 if (tile) {
                     if (edit.rotation) tile.rotation = edit.rotation;
-                    tile.setCollision(true);
+                    const NON_COLLIDE_IDS = [3, 4, 34, 39, 52, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40, 182, 183, 184, 185];
+                    if (!NON_COLLIDE_IDS.includes(edit.tileId)) tile.setCollision(true);
+                    else tile.setCollision(false);
                 }
             } else if (edit.type === 'rotate') {
                 const tile = targetLayer.getTileAt(edit.x, edit.y);
@@ -344,6 +427,18 @@ export class OfficeScene extends Phaser.Scene {
             { x: 45, y: 28, text: 'Area Colaborativa', color: '#14b8a6' },
             { x: 31, y: 36, text: 'Lounge / Cafeteria', color: '#f59e0b' },
             { x: 53, y: 36, text: 'Descanso', color: '#ec4899' },
+            // Stair indicator
+            { x: 73, y: 23, text: 'Escada 2o Andar', color: '#f97316' },
+            // 2nd floor labels (right side)
+            { x: 83, y: 9, text: 'Escada 1o Andar', color: '#f97316' },
+            { x: 95, y: 14, text: 'Sala Executiva', color: '#c084fc' },
+            { x: 120, y: 14, text: 'Treinamento', color: '#38bdf8' },
+            { x: 142, y: 14, text: 'Auditorio', color: '#fb923c' },
+            { x: 95, y: 21, text: 'Laboratorio', color: '#4ade80' },
+            { x: 120, y: 21, text: 'Estudio', color: '#f472b6' },
+            { x: 142, y: 21, text: 'Biblioteca', color: '#a78bfa' },
+            { x: 98, y: 28, text: 'Terraco', color: '#34d399' },
+            { x: 132, y: 28, text: 'Rooftop Bar', color: '#fb7185' },
         ];
 
         labels.forEach(({ x, y, text, color }) => {
@@ -382,8 +477,8 @@ export class OfficeScene extends Phaser.Scene {
 
         this.player = this.physics.add.sprite(spawnX, spawnY, `char_${this.avatarColor}`, 0);
         this.player.setScale(2);
-        this.player.setSize(20, 12);
-        this.player.setOffset(6, 36);
+        this.player.setSize(28, 24);
+        this.player.setOffset(2, 20);
         this.player.setDepth(10);
         this.player.setCollideWorldBounds(true);
 
@@ -455,6 +550,18 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     setupInput() {
+        // Disable game keyboard when typing in UI inputs (search, chat, etc.)
+        document.addEventListener('focusin', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                this.input.keyboard.enabled = false;
+            }
+        });
+        document.addEventListener('focusout', (e) => {
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+                this.input.keyboard.enabled = true;
+            }
+        });
+
         this.cursors = this.input.keyboard.createCursorKeys();
         this.wasd = this.input.keyboard.addKeys({
             up: Phaser.Input.Keyboard.KeyCodes.W,
@@ -540,6 +647,8 @@ export class OfficeScene extends Phaser.Scene {
                 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64,
                 // Outdoor ground (GID 65-66, 73-76)
                 65, 66, 73, 74, 75, 76,
+                // Stair tiles (GID 182-185)
+                182, 183, 184, 185,
             ]);
 
             // Check wallsLayer first
@@ -617,7 +726,11 @@ export class OfficeScene extends Phaser.Scene {
                     const existing = this.wallsLayer.getTileAt(tileXY.x, tileXY.y);
                     if (!existing || existing.index <= 0) {
                         const placed = this.wallsLayer.putTileAt(this.movingFurniture.tileId, tileXY.x, tileXY.y);
-                        if (placed) placed.setCollision(true);
+                        if (placed) {
+                            const NON_COLLIDE_IDS = [3, 4, 34, 39, 52, 63, 67, 68, 69, 70, 78, 79, 97, 98, 40, 182, 183, 184, 185];
+                            if (!NON_COLLIDE_IDS.includes(this.movingFurniture.tileId)) placed.setCollision(true);
+                            else placed.setCollision(false);
+                        }
                         this.saveMapEdit({ type: 'place', x: tileXY.x, y: tileXY.y, tileId: this.movingFurniture.tileId });
                     }
                 }
@@ -711,6 +824,13 @@ export class OfficeScene extends Phaser.Scene {
             this.saveMapEdit({ type: 'rotate', x: info.tileX, y: info.tileY, rotation: tile.rotation });
             eventBus.emit('furniture:selected', { ...info, rotation: tile.rotation });
         });
+
+        // Teleport player to a position (from minimap click)
+        eventBus.on('player:teleport', ({ x, y }) => {
+            if (!this.player) return;
+            this.player.setPosition(x, y);
+            this.cameras.main.centerOn(x, y);
+        });
     }
 
     update(time) {
@@ -725,6 +845,7 @@ export class OfficeScene extends Phaser.Scene {
         this.handleMovement();
         this.updateNameLabel();
         this.detectRoom();
+        this.checkStairs();
         this.checkSeatProximity();
         this.sendPosition(time);
         this.updateRemotePlayerInterpolation(time);
@@ -1081,6 +1202,36 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     // ==========================================
+    // STAIR SYSTEM - Floor transitions
+    // ==========================================
+    checkStairs() {
+        if (this._stairCooldown > 0) {
+            this._stairCooldown--;
+            return;
+        }
+        const tileX = Math.floor(this.player.x / TILE_SIZE);
+        const tileY = Math.floor(this.player.y / TILE_SIZE);
+
+        for (const stair of STAIR_ZONES) {
+            if (tileX >= stair.x1 && tileX <= stair.x2 && tileY >= stair.y1 && tileY <= stair.y2) {
+                this._stairCooldown = 60; // ~1 second cooldown at 60fps
+                const targetPx = stair.targetX * TILE_SIZE;
+                const targetPy = stair.targetY * TILE_SIZE;
+
+                // Camera fade transition
+                this.cameras.main.fadeOut(200, 0, 0, 0);
+                this.time.delayedCall(200, () => {
+                    this.player.setPosition(targetPx, targetPy);
+                    this.cameras.main.centerOn(targetPx, targetPy);
+                    this.cameras.main.fadeIn(200, 0, 0, 0);
+                    eventBus.emit('player:floor_changed', { label: stair.label });
+                });
+                return;
+            }
+        }
+    }
+
+    // ==========================================
     // DOOR LOCK SYSTEM
     // ==========================================
     updateDoorCollisions() {
@@ -1163,9 +1314,21 @@ export class OfficeScene extends Phaser.Scene {
             }
         }
 
+        // Filter out seats blocked by walls (line-of-sight check)
+        const visibleCandidates = candidates.filter(seat => {
+            const steps = Math.max(Math.abs(seat.tileX - tileX), Math.abs(seat.tileY - tileY));
+            for (let i = 1; i < steps; i++) {
+                const cx = tileX + Math.round((seat.tileX - tileX) * i / steps);
+                const cy = tileY + Math.round((seat.tileY - tileY) * i / steps);
+                const wallTile = this.wallsLayer.getTileAt(cx, cy);
+                if (wallTile && wallTile.collides) return false;
+            }
+            return true;
+        });
+
         // Pick closest (with facing bonus)
-        candidates.sort((a, b) => a.score - b.score);
-        let nearSeat = candidates.length > 0 ? candidates[0] : null;
+        visibleCandidates.sort((a, b) => a.score - b.score);
+        let nearSeat = visibleCandidates.length > 0 ? visibleCandidates[0] : null;
 
         // Detect face direction: first check tile rotation, then look for adjacent desk
         if (nearSeat) {
@@ -1275,7 +1438,7 @@ export class OfficeScene extends Phaser.Scene {
             this.player.x = px;
             this.player.y = py;
             this.player.setScale(2, 1.4);
-            this.player.setOffset(6, 42);
+            this.player.setOffset(2, 30);
             this.player.setDepth(12);
         }
 
@@ -1299,7 +1462,7 @@ export class OfficeScene extends Phaser.Scene {
 
         // Restore normal scale, offset, depth, visibility, clear crop, origin
         this.player.setScale(2, 2);
-        this.player.setOffset(6, 36);
+        this.player.setOffset(2, 20);
         this.player.setDepth(10);
         this.player.setVisible(true);
         this.player.setCrop();
@@ -1335,10 +1498,41 @@ export class OfficeScene extends Phaser.Scene {
             }
             // Move AWAY from seat to avoid clipping
             const dir = seat?.faceDirection || 'down';
+            const origX = this.player.x;
+            const origY = this.player.y;
             if (dir === 'up') this.player.y += TILE_SIZE;
             else if (dir === 'down') this.player.y -= TILE_SIZE;
             else if (dir === 'left') this.player.x += TILE_SIZE;
             else if (dir === 'right') this.player.x -= TILE_SIZE;
+
+            // Safety: if new position overlaps a wall, try other directions
+            const tileX = this.wallsLayer.worldToTileX(this.player.x);
+            const tileY = this.wallsLayer.worldToTileY(this.player.y);
+            const wallTile = this.wallsLayer.getTileAt(tileX, tileY);
+            if (wallTile && wallTile.collides) {
+                const tries = [
+                    { x: origX, y: origY + TILE_SIZE },
+                    { x: origX, y: origY - TILE_SIZE },
+                    { x: origX + TILE_SIZE, y: origY },
+                    { x: origX - TILE_SIZE, y: origY },
+                ];
+                let placed = false;
+                for (const t of tries) {
+                    const tx = this.wallsLayer.worldToTileX(t.x);
+                    const ty = this.wallsLayer.worldToTileY(t.y);
+                    const wt = this.wallsLayer.getTileAt(tx, ty);
+                    if (!wt || !wt.collides) {
+                        this.player.x = t.x;
+                        this.player.y = t.y;
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    this.player.x = origX;
+                    this.player.y = origY;
+                }
+            }
         }
 
         eventBus.emit('seat:stood_up');

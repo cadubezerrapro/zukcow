@@ -1,12 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+const isVercel = process.env.VERCEL;
+const isLocal = process.env.LOCAL;
+
 export default defineConfig({
     plugins: [react()],
-    base: process.env.VERCEL ? '/' : '/conta/zuck-coworking/',
+    base: isVercel ? '/' : isLocal ? '/zuck-coworking/' : '/conta/zuck-coworking/',
     build: {
-        outDir: process.env.VERCEL ? 'dist' : '../zuck-coworking',
-        emptyOutDir: process.env.VERCEL ? true : false,
+        outDir: isVercel ? 'dist' : '../zuck-coworking',
+        emptyOutDir: isVercel ? true : false,
         assetsDir: 'assets/build_v1',
         rollupOptions: {
             output: {

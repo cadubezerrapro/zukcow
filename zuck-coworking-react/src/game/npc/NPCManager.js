@@ -9,9 +9,9 @@ const BEHAVIOR_UPDATE_INTERVAL = 500;
 const CULL_DISTANCE = 2000;
 const NPC_HIT_RADIUS = 32;
 
-// Open area — right side of the map
-const AREA_START_X = 69;
-const AREA_START_Y = 13;
+// Hidden agent storage room — between floors, out of player view
+const AREA_START_X = 71;
+const AREA_START_Y = 41;
 const AGENTS_PER_ROW = 8;
 const COL_SPACING = 1.3;
 const ROW_SPACING = 1.6;
@@ -59,7 +59,7 @@ export class NPCManager {
         letterSpacing: 2,
         align: 'center',
         resolution: 2,
-      }).setOrigin(0.5, 1).setDepth(14);
+      }).setOrigin(0.5, 1).setDepth(14).setVisible(false);
       this._squadLabels.push(squadLabel);
 
       currentRow += 0.3;
@@ -112,6 +112,10 @@ export class NPCManager {
 
     sprite.anims.play(`char_${colorName}_idle_down`, true);
 
+    // Start hidden — agents only appear when called
+    sprite.setVisible(false);
+    nameLabel.setVisible(false);
+
     this.npcs[agent.id] = {
       sprite,
       nameLabel,
@@ -119,7 +123,7 @@ export class NPCManager {
       colorName,
       agentId: agent.id,
       agentData: agent,
-      active: true,
+      active: false,
       waypoints: null,    // A* path waypoints
       waypointIndex: 0,   // current waypoint target
     };
@@ -148,18 +152,24 @@ export class NPCManager {
 
       // Don't cull NPCs that are actively walking (called/returning)
       const isMoving = npc.behavior.state === 'called' || npc.behavior.state === 'returning';
-      const shouldBeActive = distFromCam < CULL_DISTANCE || isMoving;
 
-      if (!shouldBeActive) {
-        if (npc.active) {
-          npc.sprite.setVisible(false);
-          npc.nameLabel.setVisible(false);
-          npc.active = false;
+      // Idle agents stay hidden at spawn — only moving agents can be visible
+      if (!isMoving) {
+        if (npc.behavior.state === 'idle' && !npc.active) return;
+        // Cull idle agents that drifted far from camera
+        if (distFromCam > CULL_DISTANCE) {
+          if (npc.active) {
+            npc.sprite.setVisible(false);
+            npc.nameLabel.setVisible(false);
+            npc.active = false;
+          }
+          return;
         }
-        return;
       }
 
-      if (!npc.active) {
+      const shouldBeActive = distFromCam < CULL_DISTANCE || isMoving;
+
+      if (shouldBeActive && !npc.active) {
         npc.sprite.setVisible(true);
         npc.nameLabel.setVisible(true);
         npc.active = true;
@@ -214,6 +224,10 @@ export class NPCManager {
         npc.sprite.x = npc.behavior.spawnX;
         npc.sprite.y = npc.behavior.spawnY;
         npc.sprite.anims.play(`char_${npc.colorName}_idle_down`, true);
+        // Hide again when back at spawn
+        npc.sprite.setVisible(false);
+        npc.nameLabel.setVisible(false);
+        npc.active = false;
       }
       return;
     }

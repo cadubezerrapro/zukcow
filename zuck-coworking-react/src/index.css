@@ -327,3 +327,19 @@ html, body, #root {
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
+
+/* Minimap modal open animation */
+.minimap-modal-card {
+    animation: scaleIn 0.2s ease-out;
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
