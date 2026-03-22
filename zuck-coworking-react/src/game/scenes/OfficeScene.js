@@ -58,18 +58,23 @@ const ROOM_DOORS = {
     executiva: [{ x: 95, y: 12 }, { x: 96, y: 12 }],
     treinamento: [{ x: 120, y: 12 }, { x: 121, y: 12 }],
     auditorio: [{ x: 142, y: 12 }, { x: 143, y: 12 }],
-    lab: [{ x: 95, y: 19 }, { x: 96, y: 19 }],
-    estudio: [{ x: 120, y: 19 }, { x: 121, y: 19 }],
-    biblioteca: [{ x: 142, y: 19 }, { x: 143, y: 19 }],
+    lab: [{ x: 95, y: 18 }, { x: 96, y: 18 }],
+    estudio: [{ x: 121, y: 18 }, { x: 122, y: 18 }],
+    biblioteca: [{ x: 143, y: 18 }, { x: 144, y: 18 }],
     terraco: [{ x: 98, y: 26 }, { x: 99, y: 26 }],
     rooftop: [{ x: 132, y: 26 }, { x: 133, y: 26 }],
     _corridor_27: [{ x: 19, y: 27 }, { x: 31, y: 27 }, { x: 51, y: 27 }],
 };
 
+// Password-protected rooms
+const PASSWORD_ROOMS = {
+    'Sala Executiva': '5656',
+};
+
 // Stair zones: stepping on these teleports between floors
 const STAIR_ZONES = [
-    // 1st floor stairs (right side room) -> teleports to 2nd floor corridor center
-    { x1: 71, y1: 22, x2: 76, y2: 24, targetX: 95, targetY: 15, label: '2o Andar' },
+    // 1st floor stairs (right side room) -> teleports to 2nd floor corridor
+    { x1: 71, y1: 22, x2: 76, y2: 24, targetX: 86, targetY: 10, label: '2o Andar' },
     // 2nd floor stair landing (left side) -> teleports to 1st floor central corridor
     { x1: 81, y1: 8, x2: 84, y2: 10, targetX: 40, targetY: 18, label: '1o Andar' },
 ];
@@ -88,6 +93,8 @@ export class OfficeScene extends Phaser.Scene {
         this.lockedRooms = {};
         this._doorBlockers = {}; // roomId -> array of physics bodies blocking doors
         this._stairCooldown = 0;
+        this._authenticatedRooms = new Set();
+        this._passwordModalOpen = false;
         // Furniture editor
         this.editorMode = false;
         this.movingFurniture = null;
@@ -223,7 +230,8 @@ export class OfficeScene extends Phaser.Scene {
         } catch (e) {
             console.warn('Failed to load server furniture:', e);
         }
-        // Re-apply localStorage edits ON TOP of server state so local deletes win
+        // Auto-rotate chairs first, then apply user overrides on top
+        this.autoRotateChairs();
         this.applyMapEdits();
         // Rebuild colliders to match final tile state
         this.rebuildFrontColliders();
@@ -240,7 +248,9 @@ export class OfficeScene extends Phaser.Scene {
                 });
                 this._furnitureVersion = result.version;
                 this._furnitureTotal = result.total;
-                // Rebuild colliders after remote edits
+                // Auto-rotate chairs, then apply user overrides, then rebuild colliders
+                this.autoRotateChairs();
+                this.applyMapEdits();
                 this.rebuildFrontColliders();
             }
         } catch (e) {
@@ -264,9 +274,10 @@ export class OfficeScene extends Phaser.Scene {
             layer.forEachTile(tile => {
                 if (!CHAIR_TILES.includes(tile.index)) return;
                 for (const d of dirs) {
-                    const adj = this.wallsLayer.getTileAt(tile.x + d.dx, tile.y + d.dy)
-                             || (this.frontLayer && this.frontLayer.getTileAt(tile.x + d.dx, tile.y + d.dy));
-                    if (adj && DESK_TILES.includes(adj.index)) {
+                    const nx = tile.x + d.dx, ny = tile.y + d.dy;
+                    const adjW = this.wallsLayer.getTileAt(nx, ny);
+                    const adjF = this.frontLayer ? this.frontLayer.getTileAt(nx, ny) : null;
+                    if ((adjW && DESK_TILES.includes(adjW.index)) || (adjF && DESK_TILES.includes(adjF.index))) {
                         tile.rotation = d.angle;
                         break;
                     }
@@ -322,15 +333,11 @@ export class OfficeScene extends Phaser.Scene {
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
                     if (tile) tile.flipX = edit.flipX;
                 } else if (edit.type === 'place') {
-                    // Prevent placing non-door furniture on or adjacent to door tiles
+                    // Prevent placing non-door furniture on exact door positions
                     if (![3, 4].includes(edit.tileId)) {
                         const doorPositions = Object.values(ROOM_DOORS).flat();
-                        const isNearDoor = doorPositions.some(d =>
-                            (d.x === edit.x && d.y === edit.y) ||
-                            (d.x === edit.x && d.y === edit.y - 1) ||
-                            (d.x === edit.x && d.y === edit.y + 1)
-                        );
-                        if (isNearDoor) return;
+                        const isOnDoor = doorPositions.some(d => d.x === edit.x && d.y === edit.y);
+                        if (isOnDoor) return;
                     }
                     targetLayer.putTileAt(edit.tileId, edit.x, edit.y);
                     const tile = targetLayer.getTileAt(edit.x, edit.y);
@@ -349,15 +356,11 @@ export class OfficeScene extends Phaser.Scene {
     }
 
     saveMapEdit(edit) {
-        // Prevent placing non-door furniture on door tiles or adjacent passage tiles
+        // Prevent placing non-door furniture on exact door tile positions
         if (edit.type === 'place' && ![3, 4].includes(edit.tileId)) {
             const doorPositions = Object.values(ROOM_DOORS).flat();
-            const isNearDoor = doorPositions.some(d =>
-                (d.x === edit.x && d.y === edit.y) ||
-                (d.x === edit.x && d.y === edit.y - 1) ||
-                (d.x === edit.x && d.y === edit.y + 1)
-            );
-            if (isNearDoor) return;
+            const isOnDoor = doorPositions.some(d => d.x === edit.x && d.y === edit.y);
+            if (isOnDoor) return;
         }
         try {
             const edits = JSON.parse(localStorage.getItem('coworking_map_edits') || '[]');
@@ -481,6 +484,18 @@ export class OfficeScene extends Phaser.Scene {
         this.player.setOffset(2, 20);
         this.player.setDepth(10);
         this.player.setCollideWorldBounds(true);
+        this.player.setInteractive({ useHandCursor: true });
+        this.player.on('pointerdown', (pointer) => {
+            eventBus.emit('remote_player:clicked', {
+                id: String(this.userId),
+                name: this.userName,
+                x: this.player.x,
+                y: this.player.y,
+                screenX: pointer.event.clientX,
+                screenY: pointer.event.clientY,
+                isLocal: true
+            });
+        });
 
         this.physics.world.setBounds(0, 0, this.map.widthInPixels, this.map.heightInPixels);
         this.physics.add.collider(this.player, this.wallsLayer);
@@ -551,14 +566,25 @@ export class OfficeScene extends Phaser.Scene {
 
     setupInput() {
         // Disable game keyboard when typing in UI inputs (search, chat, etc.)
+        const gameKeys = [
+            Phaser.Input.Keyboard.KeyCodes.W,
+            Phaser.Input.Keyboard.KeyCodes.A,
+            Phaser.Input.Keyboard.KeyCodes.S,
+            Phaser.Input.Keyboard.KeyCodes.D,
+            Phaser.Input.Keyboard.KeyCodes.SPACE,
+            Phaser.Input.Keyboard.KeyCodes.X,
+            Phaser.Input.Keyboard.KeyCodes.ESC,
+        ];
         document.addEventListener('focusin', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 this.input.keyboard.enabled = false;
+                this.input.keyboard.removeCapture(gameKeys);
             }
         });
         document.addEventListener('focusout', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
                 this.input.keyboard.enabled = true;
+                this.input.keyboard.addCapture(gameKeys);
             }
         });
 
@@ -571,7 +597,34 @@ export class OfficeScene extends Phaser.Scene {
         });
         this.shiftKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SHIFT);
         this.isJumping = false;
-        this.jumpOffset = 0; // visual Y offset for jump (doesn't affect physics)
+        this.jumpOffset = 0; // visual Y offset for jump (purely visual)
+        this._jumpApplied = 0;
+
+        // Restore ground position BEFORE physics runs (preupdate fires before physics world step)
+        this.events.on('preupdate', () => {
+            if (this.player && this._jumpApplied) {
+                this.player.y -= this._jumpApplied;
+                this._jumpApplied = 0;
+            }
+        });
+
+        // Apply visual jump offset AFTER physics + update are done
+        this.events.on('postupdate', () => {
+            if (!this.player) return;
+            if (this.jumpOffset) {
+                if (!this.jumpShadow) {
+                    this.jumpShadow = this.add.ellipse(0, 0, 24, 8, 0x000000, 0.3);
+                    this.jumpShadow.setDepth(9);
+                }
+                this.jumpShadow.setPosition(this.player.x, this.player.y + 20);
+                this.jumpShadow.setVisible(true);
+                this.player.y += this.jumpOffset;
+                this._jumpApplied = this.jumpOffset;
+                this.updateNameLabel();
+            } else if (this.jumpShadow) {
+                this.jumpShadow.setVisible(false);
+            }
+        });
 
         // Space to jump (use cursors.space from createCursorKeys)
         this.input.keyboard.on('keydown-SPACE', () => {
@@ -817,11 +870,16 @@ export class OfficeScene extends Phaser.Scene {
         // Rotate: cycle 0° → 90° → 180° → 270° → 0°
         const ROTATABLE = ROTATABLE_TILES;
         eventBus.on('furniture:rotate', (info) => {
-            const tile = this.wallsLayer.getTileAt(info.tileX, info.tileY);
+            let tile = this.wallsLayer.getTileAt(info.tileX, info.tileY);
+            let layer = 'walls';
+            if ((!tile || !ROTATABLE.has(tile.index)) && this.frontLayer) {
+                tile = this.frontLayer.getTileAt(info.tileX, info.tileY);
+                layer = 'front';
+            }
             if (!tile || !ROTATABLE.has(tile.index)) return;
             const step = Math.PI / 2;
             tile.rotation = ((tile.rotation || 0) + step) % (Math.PI * 2);
-            this.saveMapEdit({ type: 'rotate', x: info.tileX, y: info.tileY, rotation: tile.rotation });
+            this.saveMapEdit({ type: 'rotate', x: info.tileX, y: info.tileY, rotation: tile.rotation, layer });
             eventBus.emit('furniture:selected', { ...info, rotation: tile.rotation });
         });
 
@@ -836,10 +894,13 @@ export class OfficeScene extends Phaser.Scene {
     update(time) {
         if (!this.player) return;
 
-        // Restore real Y from previous frame's jump offset
-        if (this._jumpApplied) {
-            this.player.y -= this._jumpApplied;
-            this._jumpApplied = 0;
+        if (this._passwordModalOpen) {
+            this.player.body.setVelocity(0, 0);
+            this.player.anims.stop();
+            this.updateRemotePlayerInterpolation(time);
+            if (this.npcManager) this.npcManager.update(time, time - (this._lastTime || time));
+            this._lastTime = time;
+            return;
         }
 
         this.handleMovement();
@@ -860,22 +921,7 @@ export class OfficeScene extends Phaser.Scene {
             room: this.currentRoom
         });
 
-        // Visual jump: move sprite up + show shadow at real feet position
-        if (this.jumpOffset) {
-            if (!this.jumpShadow) {
-                this.jumpShadow = this.add.ellipse(0, 0, 24, 8, 0x000000, 0.3);
-                this.jumpShadow.setDepth(9);
-            }
-            this.jumpShadow.setPosition(this.player.x, this.player.y + 20);
-            this.jumpShadow.setVisible(true);
-            // Apply visual offset (negative = up)
-            this.player.y += this.jumpOffset;
-            this._jumpApplied = this.jumpOffset;
-            // Reposition name label + green dot at jumped position
-            this.updateNameLabel();
-        } else if (this.jumpShadow) {
-            this.jumpShadow.setVisible(false);
-        }
+        // Jump visual is handled in postupdate event (after physics)
 
         // Emit camera info for React overlays (VideoBubbles, FurnitureEditor)
         // Use worldView which gives the exact visible world rectangle
@@ -1045,6 +1091,17 @@ export class OfficeScene extends Phaser.Scene {
         const sprite = this.add.sprite(data.x, data.y, `char_${colorName}`, 0);
         sprite.setScale(2);
         sprite.setDepth(10);
+        sprite.setInteractive({ useHandCursor: true });
+        sprite.on('pointerdown', (pointer) => {
+            eventBus.emit('remote_player:clicked', {
+                id: id,
+                name: data.name,
+                x: sprite.x,
+                y: sprite.y,
+                screenX: pointer.event.clientX,
+                screenY: pointer.event.clientY,
+            });
+        });
 
         const nameLabel = this.add.text(data.x, data.y - 56, `\u25CF ${data.name}`, {
             fontSize: '14px',
@@ -1185,6 +1242,22 @@ export class OfficeScene extends Phaser.Scene {
         for (const room of ROOM_ZONES) {
             if (tileX >= room.x1 && tileX <= room.x2 && tileY >= room.y1 && tileY <= room.y2) {
                 if (this.currentRoom !== room.id) {
+                    // Check password protection
+                    const requiredPassword = PASSWORD_ROOMS[room.name];
+                    if (requiredPassword && !this._authenticatedRooms.has(room.id) && !this._passwordModalOpen) {
+                        this._passwordModalOpen = true;
+                        this.player.body.setVelocity(0, 0);
+                        // Push player back outside the room in the direction they came from
+                        const roomCenterY = (room.y1 + room.y2) / 2;
+                        if (tileY <= roomCenterY) {
+                            this.player.setPosition(this.player.x, (room.y1 - 1) * TILE_SIZE);
+                        } else {
+                            this.player.setPosition(this.player.x, (room.y2 + 1) * TILE_SIZE);
+                        }
+                        this._showPasswordModal(room, requiredPassword);
+                        return;
+                    }
+
                     const oldRoom = this.currentRoom;
                     this.currentRoom = room.id;
                     eventBus.emit('room:entered', { roomId: room.id, name: room.name });
@@ -1199,6 +1272,96 @@ export class OfficeScene extends Phaser.Scene {
             this.currentRoom = null;
             eventBus.emit('room:left', { roomId: oldRoom });
         }
+    }
+
+    _showPasswordModal(room, correctPassword) {
+        // Create overlay
+        const overlay = document.createElement('div');
+        overlay.id = 'room-password-overlay';
+        overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;z-index:9999;animation:fadeIn .2s ease';
+
+        const modal = document.createElement('div');
+        modal.style.cssText = 'background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(139,92,246,0.3);border-radius:16px;padding:32px;width:340px;box-shadow:0 20px 60px rgba(0,0,0,0.5),0 0 30px rgba(139,92,246,0.15);text-align:center;font-family:system-ui,sans-serif';
+
+        const icon = document.createElement('div');
+        icon.textContent = '🔒';
+        icon.style.cssText = 'font-size:40px;margin-bottom:12px';
+
+        const title = document.createElement('h2');
+        title.textContent = room.name;
+        title.style.cssText = 'color:#e2e8f0;font-size:18px;margin:0 0 4px;font-weight:700';
+
+        const subtitle = document.createElement('p');
+        subtitle.textContent = 'Esta sala requer senha para entrar';
+        subtitle.style.cssText = 'color:#94a3b8;font-size:13px;margin:0 0 20px';
+
+        const input = document.createElement('input');
+        input.type = 'password';
+        input.placeholder = 'Digite a senha...';
+        input.style.cssText = 'width:100%;box-sizing:border-box;background:rgba(255,255,255,0.05);border:1px solid rgba(139,92,246,0.3);border-radius:10px;padding:12px 16px;color:#fff;font-size:15px;outline:none;text-align:center;letter-spacing:6px;transition:border-color .2s';
+        input.addEventListener('focus', () => { input.style.borderColor = 'rgba(139,92,246,0.6)'; });
+        input.addEventListener('blur', () => { input.style.borderColor = 'rgba(139,92,246,0.3)'; });
+
+        const error = document.createElement('p');
+        error.style.cssText = 'color:#f87171;font-size:12px;margin:8px 0 0;min-height:18px';
+
+        const btnRow = document.createElement('div');
+        btnRow.style.cssText = 'display:flex;gap:10px;margin-top:16px';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.textContent = 'Cancelar';
+        cancelBtn.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#94a3b8;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s';
+        cancelBtn.addEventListener('mouseenter', () => { cancelBtn.style.background = 'rgba(255,255,255,0.1)'; });
+        cancelBtn.addEventListener('mouseleave', () => { cancelBtn.style.background = 'rgba(255,255,255,0.05)'; });
+
+        const enterBtn = document.createElement('button');
+        enterBtn.textContent = 'Entrar';
+        enterBtn.style.cssText = 'flex:1;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,#8b5cf6,#6366f1);color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s';
+        enterBtn.addEventListener('mouseenter', () => { enterBtn.style.opacity = '0.85'; });
+        enterBtn.addEventListener('mouseleave', () => { enterBtn.style.opacity = '1'; });
+
+        btnRow.append(cancelBtn, enterBtn);
+        modal.append(icon, title, subtitle, input, error, btnRow);
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        input.focus();
+
+        const cleanup = () => {
+            overlay.remove();
+            this._passwordModalOpen = false;
+            this.game.canvas.focus();
+            // Reset key states to prevent ghost movement from keys pressed during modal
+            if (this.input.keyboard) {
+                this.input.keyboard.resetKeys();
+            }
+        };
+
+        const tryEnter = () => {
+            if (input.value === correctPassword) {
+                this._authenticatedRooms.add(room.id);
+                // Teleport player inside the room (door position)
+                const doors = ROOM_DOORS[room.id];
+                if (doors && doors.length > 0) {
+                    const door = doors[0];
+                    this.player.setPosition(door.x * TILE_SIZE, (door.y + 1) * TILE_SIZE);
+                }
+                cleanup();
+            } else {
+                error.textContent = 'Senha incorreta!';
+                input.value = '';
+                input.style.borderColor = '#f87171';
+                setTimeout(() => { input.style.borderColor = 'rgba(139,92,246,0.3)'; }, 1000);
+            }
+        };
+
+        enterBtn.addEventListener('click', tryEnter);
+        cancelBtn.addEventListener('click', cleanup);
+        input.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+            if (e.key === 'Enter') tryEnter();
+            if (e.key === 'Escape') cleanup();
+        });
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(); });
     }
 
     // ==========================================
@@ -1284,12 +1447,13 @@ export class OfficeScene extends Phaser.Scene {
         const candidates = [];
 
         // Range ±2 to compensate for collision stopping player before adjacent tile
+        const seatLayers = [this.wallsLayer, this.frontLayer].filter(Boolean);
         for (let dy = -2; dy <= 2; dy++) {
             for (let dx = -2; dx <= 2; dx++) {
                 const checkX = tileX + dx;
                 const checkY = tileY + dy;
-                if (this.wallsLayer) {
-                    const tile = this.wallsLayer.getTileAt(checkX, checkY);
+                for (const layer of seatLayers) {
+                    const tile = layer.getTileAt(checkX, checkY);
                     if (tile && SITTABLE_GIDS.includes(tile.index)) {
                         const dist = Math.abs(dx) + Math.abs(dy);
                         // Bonus: prefer tile in facing direction
@@ -1309,6 +1473,7 @@ export class OfficeScene extends Phaser.Scene {
                             type: gid === KART_GID ? 'kart' : gid === 28 ? 'chair' : gid === 27 ? 'sofa' : gid === 36 ? 'beanbag' : (gid === 143 || gid === 144) ? 'chair' : 'other',
                             score: dist + facingBonus
                         });
+                        break; // don't double-count same position
                     }
                 }
             }

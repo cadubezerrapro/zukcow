@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Wifi, WifiOff, Mic, MicOff, Video, VideoOff, Monitor, Lock, Unlock, DoorOpen, Bot } from 'lucide-react';
+
 
 function Tooltip({ text, children }) {
     const [show, setShow] = useState(false);
@@ -22,14 +23,19 @@ export default function HUD({
     connected, micEnabled, camEnabled, onToggleMic, onToggleCam,
     currentRoom, currentRoomName, roomLocked, peersInRoom,
     onScreenShare, isScreenSharing, onLockRoom, onUnlockRoom,
-    nearSeat, isSitting, onToggleAgents, sidebarOpen
+    nearSeat, isSitting, onToggleAgents, sidebarOpen, rightSidebarOpen
 }) {
+    const [agentCount, setAgentCount] = useState(0);
+    useEffect(() => {
+        import('../data/agents').then(m => setAgentCount(m.getAllAgents().length));
+    }, []);
+
     return (
         <div className="gather-hud">
             {/* Top Bar */}
             <div
-                className="absolute top-4 right-4 flex items-center justify-between pointer-events-none transition-all duration-300"
-                style={{ left: sidebarOpen ? 296 : 40 }}
+                className="absolute top-4 flex items-center justify-between pointer-events-none transition-all duration-300"
+                style={{ left: sidebarOpen ? 296 : 40, right: rightSidebarOpen ? 336 : 16 }}
             >
                 {/* Logo & Connection Status */}
                 <div className="flex items-center gap-3 pointer-events-auto">
@@ -60,17 +66,19 @@ export default function HUD({
                     )}
                 </div>
 
-                {/* Agents Button */}
-                <div className="flex items-center gap-2 pointer-events-auto">
-                    <button
-                        onClick={onToggleAgents}
-                        className="bg-gather-card/90 backdrop-blur-sm border border-purple-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-purple-900/40 transition-colors cursor-pointer"
-                    >
-                        <Bot size={16} className="text-purple-400" />
-                        <span className="text-white text-sm font-medium">Agentes</span>
-                        <span className="bg-purple-500/20 text-purple-300 text-xs font-semibold px-1.5 py-0.5 rounded-md">136</span>
-                    </button>
-                </div>
+                {/* Agents Button — hidden when right sidebar is open */}
+                {!rightSidebarOpen && (
+                    <div className="flex items-center gap-2 pointer-events-auto">
+                        <button
+                            onClick={onToggleAgents}
+                            className="bg-gather-card/90 backdrop-blur-sm border border-purple-500/30 rounded-xl px-4 py-2.5 flex items-center gap-2 hover:bg-purple-900/40 transition-colors cursor-pointer"
+                        >
+                            <Bot size={16} className="text-purple-400" />
+                            <span className="text-white text-sm font-medium">Agentes</span>
+                            <span className="bg-purple-500/20 text-purple-300 text-xs font-semibold px-1.5 py-0.5 rounded-md">{agentCount}</span>
+                        </button>
+                    </div>
+                )}
             </div>
 
             {/* Seat Prompt */}

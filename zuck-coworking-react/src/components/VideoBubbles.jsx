@@ -58,9 +58,17 @@ function useSpeaking(stream) {
     return isSpeaking;
 }
 
-function VideoTile({ stream, name, isLocal, hasVideo }) {
+function VideoTile({ stream, name, isLocal, hasVideo, pipRef }) {
     const videoRef = useRef(null);
     const isSpeaking = useSpeaking(stream);
+
+    // Register this video ref for PiP (priority: screen share > remote video > local)
+    useEffect(() => {
+        if (pipRef && videoRef.current && hasVideo && !isLocal) {
+            pipRef.current = videoRef.current;
+            return () => { if (pipRef.current === videoRef.current) pipRef.current = null; };
+        }
+    }, [pipRef, hasVideo, isLocal]);
 
     useEffect(() => {
         const el = videoRef.current;
@@ -160,11 +168,19 @@ function VideoTile({ stream, name, isLocal, hasVideo }) {
     );
 }
 
-function ScreenShareWindow({ stream, onStop }) {
+function ScreenShareWindow({ stream, onStop, pipRef }) {
     const videoRef = useRef(null);
     const containerRef = useRef(null);
     const [pos, setPos] = useState({ x: 16, y: 60 });
     const dragging = useRef(null);
+
+    // Register screen share video for auto-PiP
+    useEffect(() => {
+        if (pipRef && videoRef.current) {
+            pipRef.current = videoRef.current;
+            return () => { if (pipRef.current === videoRef.current) pipRef.current = null; };
+        }
+    }, [pipRef]);
 
     useEffect(() => {
         const el = videoRef.current;
@@ -259,6 +275,40 @@ function ScreenShareWindow({ stream, onStop }) {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                     <span style={{ color: '#64748b', fontSize: 10 }}>Arraste para mover</span>
+                    {document.pictureInPictureEnabled && (
+                        <button
+                            onClick={() => {
+                                if (videoRef.current) {
+                                    if (document.pictureInPictureElement) {
+                                        document.exitPictureInPicture().catch(() => {});
+                                    } else {
+                                        videoRef.current.requestPictureInPicture().catch(() => {});
+                                    }
+                                }
+                            }}
+                            title="Picture-in-Picture"
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: 'none',
+                                background: '#334155',
+                                color: '#e2e8f0',
+                                fontSize: 11,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                transition: 'background 0.15s',
+                            }}
+                            onMouseEnter={e => e.target.style.background = '#475569'}
+                            onMouseLeave={e => e.target.style.background = '#334155'}
+                        >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="2" y="3" width="20" height="14" rx="2" />
+                                <rect x="12" y="9" width="8" height="6" rx="1" fill="currentColor" opacity="0.3" />
+                            </svg>
+                        </button>
+                    )}
                     {onStop && (
                         <button
                             onClick={onStop}
@@ -339,6 +389,35 @@ export default function VideoBubbles({
     const hasLocalMedia = !!(localStream && (camEnabled || micEnabled));
     const hasScreen = !!(screenStream && screenStream.getVideoTracks().length > 0);
 
+    // PiP refs — screen share has priority, then first remote video
+    const screenPiPRef = useRef(null);
+    const remotePiPRef = useRef(null);
+
+    // Auto PiP when user leaves tab (like Zoom/Meet)
+    useEffect(() => {
+        if (!document.pictureInPictureEnabled) return;
+
+        const handleVisibility = async () => {
+            if (document.hidden) {
+                // Tab hidden — enter PiP with best available video
+                const target = screenPiPRef.current || remotePiPRef.current;
+                if (target && !target.paused && target.readyState >= 2) {
+                    try {
+                        await target.requestPictureInPicture();
+                    } catch (e) { /* user gesture required or already in PiP */ }
+                }
+            } else {
+                // Tab visible — exit PiP
+                if (document.pictureInPictureElement) {
+                    try { await document.exitPictureInPicture(); } catch (e) { /* ignore */ }
+                }
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, []);
+
     const myId = String(window.USER_ID || localStorage.getItem('cowork_user_id') || '');
     const roomPeers = currentRoom
         ? Object.entries(onlineUsers).filter(
@@ -353,7 +432,7 @@ export default function VideoBubbles({
     return (
         <>
             {/* Screen share — floating window, bottom-right */}
-            {hasScreen && <ScreenShareWindow stream={screenStream} onStop={onStopScreenShare} />}
+            {hasScreen && <ScreenShareWindow stream={screenStream} onStop={onStopScreenShare} pipRef={screenPiPRef} />}
 
             {/* Video bubbles — top center */}
             {showBubbles && (
@@ -388,7 +467,7 @@ export default function VideoBubbles({
                         )}
 
                         {/* Remote users with streams */}
-                        {Object.entries(remoteStreams).map(([peerId, stream]) => {
+                        {Object.entries(remoteStreams).map(([peerId, stream], idx) => {
                             const user = onlineUsers[peerId];
                             const hasVideo = stream?.getVideoTracks?.().length > 0;
                             return (
@@ -398,6 +477,7 @@ export default function VideoBubbles({
                                     name={user?.name || `User ${peerId}`}
                                     isLocal={false}
                                     hasVideo={!!hasVideo}
+                                    pipRef={idx === 0 ? remotePiPRef : undefined}
                                 />
                             );
                         })}

@@ -106,7 +106,7 @@ if (is_dir($buildDir)) {
         <script>
             document.querySelector('.loading-screen').innerHTML = `
                 <div style="text-align:center; color: #9ca3af;">
-                    <p style="font-size:18px; color:#3498db; margin-bottom:8px;">ZuckPay Co-Work</p>
+                    <p style="font-size:18px; color:#3498db; margin-bottom:8px;">ZuckPay Coworking</p>
                     <p>Build nao encontrado.</p>
                     <p style="font-size:12px; margin-top:8px;">
                         Execute <code style="background:#1f2937;padding:2px 6px;border-radius:4px;">cd conta/zuck-coworking-react && npm install && npm run build</code>

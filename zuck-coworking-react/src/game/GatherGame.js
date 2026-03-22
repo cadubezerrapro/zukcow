@@ -15,7 +15,7 @@ export function createGatherGame(containerId, config = {}) {
         pixelArt: true,
         roundPixels: true,
         antialias: false,
-        backgroundColor: '#78b858',
+        backgroundColor: '#111827',
         physics: {
             default: 'arcade',
             arcade: {

@@ -7,7 +7,7 @@ const TILE_SIZE = 64;
 const AVATAR_COLORS = ['blue', 'red', 'green', 'purple', 'orange', 'pink', 'teal', 'gray'];
 const BEHAVIOR_UPDATE_INTERVAL = 500;
 const CULL_DISTANCE = 2000;
-const NPC_HIT_RADIUS = 32;
+const NPC_HIT_RADIUS = 48;
 
 // Hidden agent storage room — between floors, out of player view
 const AREA_START_X = 71;

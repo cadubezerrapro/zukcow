@@ -11,9 +11,13 @@ import AgentPanel from './components/AgentPanel';
 import AgentCatalog from './components/AgentCatalog';
 import AgentChat from './components/AgentChat';
 import PeopleSidebar from './components/PeopleSidebar';
+import RightSidebar from './components/RightSidebar';
 import MapControls from './components/MapControls';
 
+
 export default function App() {
+    const isAdmin = (window.USER_ROLE || '').toUpperCase() === 'ADMIN';
+
     const gameContainerRef = useRef(null);
     const gameRef = useRef(null);
     const heartbeatIntervalRef = useRef(null);
@@ -21,6 +25,7 @@ export default function App() {
     const [onlineUsers, setOnlineUsers] = useState({});
     const [playerPos, setPlayerPos] = useState({ x: 0, y: 0 });
     const [showWelcome, setShowWelcome] = useState(true);
+    const [gameLoading, setGameLoading] = useState(false);
     const [displayName, setDisplayNameState] = useState(
         localStorage.getItem('coworking_display_name') || window.USER_NAME || 'Voce'
     );
@@ -59,6 +64,23 @@ export default function App() {
 
     // People sidebar state
     const [sidebarOpen, setSidebarOpen] = useState(true);
+
+    // Right sidebar state
+    const [rightSidebarOpen, setRightSidebarOpen] = useState(false);
+
+    // Open left sidebar when clicking remote player sprite
+    useEffect(() => {
+        const handler = () => setSidebarOpen(true);
+        eventBus.on('remote_player:clicked', handler);
+        return () => eventBus.off('remote_player:clicked', handler);
+    }, []);
+
+    // Open right sidebar when DM is requested
+    useEffect(() => {
+        const openDm = () => setRightSidebarOpen(true);
+        eventBus.on('chat:open_dm', openDm);
+        return () => eventBus.off('chat:open_dm', openDm);
+    }, []);
 
     // Furniture editor state
     const [editorMode, setEditorMode] = useState(false);
@@ -174,9 +196,9 @@ export default function App() {
         };
     }, []);
 
-    // Initialize Phaser game only after welcome modal is dismissed
+    // Initialize Phaser game when loading starts (modal still visible)
     useEffect(() => {
-        if (showWelcome) return;
+        if (!gameLoading) return;
         if (gameContainerRef.current && !gameRef.current) {
             gameRef.current = createGatherGame('phaser-container', {
                 userId: window.USER_ID || getLocalUserId(),
@@ -191,11 +213,19 @@ export default function App() {
                 gameRef.current = null;
             }
         };
-    }, [showWelcome]);
+    }, [gameLoading]);
 
-    // Connect to backend only after welcome modal
+    // Hide welcome modal only when scene is fully ready
     useEffect(() => {
-        if (showWelcome) return;
+        if (!gameLoading) return;
+        const handler = () => setShowWelcome(false);
+        eventBus.on('scene:ready', handler);
+        return () => eventBus.off('scene:ready', handler);
+    }, [gameLoading]);
+
+    // Connect to backend only after game starts loading
+    useEffect(() => {
+        if (!gameLoading) return;
         const spaceId = window.SPACE_ID || 1;
 
         // Subscribe to events BEFORE connecting to avoid race condition
@@ -252,8 +282,30 @@ export default function App() {
             setCurrentRoom(null);
             setCurrentRoomName('');
             currentRoomRef.current = null;
-            // Disconnect all peers when leaving room
+
+            // Auto-desligar screen share (requer interacao do usuario pra religar)
+            stopScreenShare();
+
+            // Auto-desligar camera (stop + remove tracks, igual toggleCam faz)
+            if (localStreamRef.current) {
+                localStreamRef.current.getVideoTracks().forEach(t => {
+                    t.stop();
+                    localStreamRef.current.removeTrack(t);
+                });
+            }
+            setCamEnabled(false);
+
+            // Auto-desligar microfone (disable tracks, igual toggleMic faz)
+            if (localStreamRef.current) {
+                localStreamRef.current.getAudioTracks().forEach(t => t.enabled = false);
+            }
+            setMicEnabled(false);
+
+            // Desconectar todos os peers
             disconnectAllPeers();
+
+            // Fechar sidebar direita ao sair de sala
+            setRightSidebarOpen(false);
         });
 
         // Seat events
@@ -304,7 +356,7 @@ export default function App() {
             unsubFMoveEnd();
             unsubNpcClick();
         };
-    }, [showWelcome]);
+    }, [gameLoading]);
 
     // Emit room locks to OfficeScene (Phaser)
     useEffect(() => {
@@ -338,7 +390,7 @@ export default function App() {
         localStorage.setItem('cowork_user_name', name);
         localStorage.setItem('coworking_display_name', name);
         setDisplayName(name).catch(() => {});
-        setShowWelcome(false);
+        setGameLoading(true);
     };
 
     const handleNameChange = (newName) => {
@@ -587,10 +639,6 @@ export default function App() {
         if (currentRoom) unlockRoom(currentRoom).catch(() => {});
     }, [currentRoom]);
 
-    if (showWelcome) {
-        return <WelcomeModal onEnter={handleWelcomeEnter} />;
-    }
-
     const localUserId = String(window.USER_ID || getLocalUserId());
 
     return (
@@ -601,9 +649,13 @@ export default function App() {
                 className="w-full h-full"
             />
 
+            {showWelcome && <WelcomeModal onEnter={handleWelcomeEnter} loading={gameLoading} />}
+
+            {!showWelcome && <>
             <HUD
                 connected={connected}
                 sidebarOpen={sidebarOpen}
+                rightSidebarOpen={rightSidebarOpen}
                 micEnabled={micEnabled}
                 camEnabled={camEnabled}
                 onToggleMic={toggleMic}
@@ -618,7 +670,8 @@ export default function App() {
                 onUnlockRoom={handleUnlockRoom}
                 nearSeat={nearSeat}
                 isSitting={isSitting}
-                onToggleAgents={() => setShowCatalog(prev => !prev)}
+                onToggleAgents={() => setRightSidebarOpen(prev => !prev)}
+
             />
 
             <VideoBubbles
@@ -635,6 +688,7 @@ export default function App() {
                 onStopScreenShare={stopScreenShare}
             />
 
+            {isAdmin && (
             <FurnitureEditor
                 editorMode={editorMode}
                 hoveredFurniture={hoveredFurniture}
@@ -675,6 +729,7 @@ export default function App() {
                     eventBus.emit('furniture:add_new', { tileId: tileId + 1 }); // +1: catalog uses 0-based, map uses GID (firstgid=1)
                 }}
             />
+            )}
 
             <PeopleSidebar
                 onlineUsers={onlineUsers}
@@ -684,9 +739,26 @@ export default function App() {
                 localUserRoom={currentRoom}
                 open={sidebarOpen}
                 onToggle={() => setSidebarOpen(prev => !prev)}
+                isAdmin={isAdmin}
             />
 
-            <MapControls onlineUsers={onlineUsers} roomLocks={roomLocks} />
+            <RightSidebar
+                open={rightSidebarOpen}
+                onToggle={() => setRightSidebarOpen(prev => !prev)}
+                currentRoom={currentRoom}
+                currentRoomName={currentRoomName}
+                displayName={displayName}
+                localUserId={localUserId}
+                onCallAgent={(agentId) => {
+                    eventBus.emit('npc:call', agentId);
+                }}
+                onOpenChat={(agentId) => {
+                    setChatAgents(prev => prev.includes(agentId) ? prev : [...prev, agentId]);
+                    setRightSidebarOpen(false);
+                }}
+            />
+
+            <MapControls onlineUsers={onlineUsers} roomLocks={roomLocks} rightSidebarOpen={rightSidebarOpen} />
 
             {selectedAgent && !chatAgents.includes(selectedAgent) && (
                 <AgentPanel
@@ -697,7 +769,6 @@ export default function App() {
                         setSelectedAgent(null);
                     }}
                     onOpenChat={(agentId) => {
-                        eventBus.emit('npc:call', agentId);
                         setChatAgents(prev => prev.includes(agentId) ? prev : [...prev, agentId]);
                         setSelectedAgent(null);
                     }}
@@ -712,7 +783,6 @@ export default function App() {
                         setShowCatalog(false);
                     }}
                     onOpenChat={(agentId) => {
-                        eventBus.emit('npc:call', agentId);
                         setChatAgents(prev => prev.includes(agentId) ? prev : [...prev, agentId]);
                         setSelectedAgent(null);
                         setShowCatalog(false);
@@ -734,6 +804,7 @@ export default function App() {
                     }}
                 />
             )}
+            </>}
         </div>
     );
 }

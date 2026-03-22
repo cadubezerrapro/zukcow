@@ -91,7 +91,7 @@ function hashString(str) {
     return Math.abs(hash);
 }
 
-export default function WelcomeModal({ onEnter }) {
+export default function WelcomeModal({ onEnter, loading }) {
     const savedName = localStorage.getItem('cowork_user_name') || localStorage.getItem('coworking_display_name');
     const [displayName, setDisplayName] = useState(savedName || window.USER_NAME || '');
     const [selectedColor, setSelectedColor] = useState(() => {
@@ -136,7 +136,7 @@ export default function WelcomeModal({ onEnter }) {
                     <div className="welcome-modal-icon">
                         <Building2 size={28} strokeWidth={1.5} />
                     </div>
-                    <h1 className="welcome-modal-title">ZuckPay Co-Work</h1>
+                    <h1 className="welcome-modal-title">ZuckPay Coworking</h1>
                     <p className="welcome-modal-subtitle">Escritorio Virtual Colaborativo</p>
                 </div>
 
@@ -180,12 +180,12 @@ export default function WelcomeModal({ onEnter }) {
                 <button
                     className="welcome-modal-btn"
                     onClick={handleEnter}
-                    disabled={!displayName.trim() || entering}
+                    disabled={!displayName.trim() || entering || loading}
                 >
-                    {entering ? (
+                    {entering || loading ? (
                         <span className="welcome-modal-btn-loading">
                             <span className="welcome-spinner" />
-                            Entrando...
+                            {loading ? 'Carregando escritorio...' : 'Entrando...'}
                         </span>
                     ) : (
                         <span className="welcome-modal-btn-content">
@@ -197,7 +197,7 @@ export default function WelcomeModal({ onEnter }) {
 
                 {/* Footer hint */}
                 <p className="welcome-modal-hint">
-                    Use WASD ou setas para se mover. Scroll para zoom.
+                    {loading ? 'Preparando seu ambiente de trabalho...' : 'Use WASD ou setas para se mover. Scroll para zoom.'}
                 </p>
             </div>
         </div>

@@ -122,3 +122,20 @@ export async function getFurnitureEdits(sinceIndex = 0, spaceId = 1) {
     const { data } = await api.get(`${API_BASE}?action=get_furniture&space_id=${spaceId}&since=${sinceIndex}`);
     return data;
 }
+
+// Tags
+export async function saveTags(targetUserId, tags) {
+    const { data } = await api.post(`${API_BASE}?action=save_tags`, buildParams({
+        target_user_id: targetUserId,
+        dept: tags.dept || '',
+        level_name: tags.levelName || '',
+        skills: JSON.stringify(tags.skills || []),
+        custom_tags: JSON.stringify(tags.customTags || []),
+    }));
+    return data;
+}
+
+export async function getAllTags() {
+    const { data } = await api.get(`${API_BASE}?action=get_tags`);
+    return data;
+}
